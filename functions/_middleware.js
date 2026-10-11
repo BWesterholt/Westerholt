@@ -66,6 +66,12 @@ export async function onRequest(context) {
   if (path === "/info") {
     return json(await findInfo(context, url.searchParams.get("a") || "", url.searchParams.get("b") || ""));
   }
+  if (path === "/medvirkende") {
+    return json(await findCredits(context, url.searchParams.get("a") || "", url.searchParams.get("b") || ""));
+  }
+  if (path === "/person") {
+    return json(await findPerson(context, url.searchParams.get("id") || ""));
+  }
   if (path === "/sang") {
     return json(await findSong(context, url.searchParams.get("q") || ""));
   }
@@ -138,6 +144,127 @@ async function findSong(context, query) {
   });
 }
 
+// Who produced and played on each song, from MusicBrainz. Credits for the whole album
+// (release level) are returned separately from the per-song credits.
+async function findCredits(context, artist, album) {
+  const name = searchArtist(artist);
+  const title = searchTitle(album);
+  return cached(context, "credits/v1", { a: artist, b: album }, async () => {
+    const query = `artist:"${name.replace(/"/g, "")}" AND releasegroup:"${title.replace(/"/g, "")}"`;
+    let groups;
+    try {
+      ({ "release-groups": groups = [] } = await getJson("https://musicbrainz.org/ws/2/release-group/?fmt=json&limit=5&query=" + encodeURIComponent(query), true));
+    } catch (e) {
+      return { album: [], tracks: [], retry: true };
+    }
+    const group = groups.find((g) => g.score >= 85 && titleScore(g.title, title) > 0);
+    if (!group) return { album: [], tracks: [] };
+    try {
+      const { releases = [] } = await getJson(`https://musicbrainz.org/ws/2/release?fmt=json&limit=25&release-group=${group.id}`, true);
+      // Prefer an official release; the first one listed is usually the original.
+      const pick = releases.filter((r) => r.status === "Official").concat(releases).slice(0, 2);
+      let best = null;
+      for (const r of pick) {
+        const inc = "recordings+artist-credits+artist-rels+recording-level-rels+work-rels+work-level-rels";
+        const release = await getJson(`https://musicbrainz.org/ws/2/release/${r.id}?fmt=json&inc=${inc}`, true);
+        const result = creditsOf(release);
+        const count = result.album.length + result.tracks.reduce((n, t) => n + t.c.length, 0);
+        if (!best || count > best.count) best = { count, result };
+        if (count >= 5) break;
+      }
+      return best ? { ...best.result, mb: group.id } : { album: [], tracks: [] };
+    } catch (e) {
+      return { album: [], tracks: [], retry: true };
+    }
+  });
+}
+
+function creditsOf(release) {
+  const album = credits(release.relations);
+  const tracks = [];
+  for (const medium of release.media || []) {
+    for (const t of medium.tracks || []) {
+      const rec = t.recording || {};
+      const c = credits(rec.relations);
+      for (const rel of rec.relations || []) {
+        if (rel.work) c.push(...credits(rel.work.relations));
+      }
+      tracks.push({ t: t.title, c: merge(c) });
+    }
+  }
+  return { album: merge(album), tracks };
+}
+
+// Turns MusicBrainz relationships into [{r: role, n: name, id}] entries.
+function credits(relations) {
+  const out = [];
+  for (const rel of relations || []) {
+    if (!rel.artist) continue;
+    const attrs = plainAttributes(rel);
+    let role = ROLES[rel.type];
+    if (!role) continue;
+    if ((rel.type === "instrument" || rel.type === "vocal") && attrs.length) role = attrs.map(instrument).join(", ");
+    if (rel.type === "producer" && (rel.attributes || []).includes("executive")) role = "Executive producer";
+    out.push({ r: role, n: rel.artist.name, id: rel.artist.id });
+  }
+  return out;
+}
+
+function plainAttributes(rel) {
+  return (rel.attributes || []).filter((a) => !["additional", "guest", "solo", "co", "executive", "assistant", "lead"].includes(a));
+}
+
+function merge(list) {
+  const seen = new Set();
+  return list.filter((c) => { const k = c.r + "|" + c.id; return !seen.has(k) && seen.add(k); });
+}
+
+const ROLES = {
+  producer: "Producer", instrument: "Spiller", vocal: "Vokal", performer: "Medvirkende", "performing orchestra": "Orkester",
+  conductor: "Dirigent", engineer: "Lydtekniker", "recording": "Indspilning", mix: "Mix", mastering: "Mastering",
+  arranger: "Arrangement", "instrument arranger": "Arrangement", "vocal arranger": "Arrangement", programming: "Programmering",
+  composer: "Musik", lyricist: "Tekst", writer: "Skrevet af",
+};
+
+const INSTRUMENTS = {
+  guitar: "Guitar", "electric guitar": "El-guitar", "acoustic guitar": "Akustisk guitar", "bass guitar": "Bas", bass: "Bas",
+  "drums (drum set)": "Trommer", drums: "Trommer", "drum set": "Trommer", piano: "Klaver", keyboard: "Keyboard", organ: "Orgel",
+  "lead vocals": "Forsanger", "background vocals": "Kor", "backing vocals": "Kor", vocals: "Vokal", percussion: "Percussion",
+  harmonica: "Mundharmonika", saxophone: "Saxofon", trumpet: "Trompet", violin: "Violin", strings: "Strygere", synthesizer: "Synthesizer",
+};
+
+function instrument(name) {
+  return INSTRUMENTS[name] || name.charAt(0).toUpperCase() + name.slice(1);
+}
+
+// Everything a person has released or is credited on, from MusicBrainz.
+async function findPerson(context, id) {
+  if (!/^[0-9a-f-]{36}$/.test(id)) return { error: "ukendt" };
+  return cached(context, "person/v1", { id }, async () => {
+    try {
+      const [artist, own] = await Promise.all([
+        getJson(`https://musicbrainz.org/ws/2/artist/${id}?fmt=json&inc=release-group-rels+release-rels`, true),
+        getJson(`https://musicbrainz.org/ws/2/release-group?fmt=json&limit=100&artist=${id}&type=album|ep`, true),
+      ]);
+      const credited = [];
+      for (const rel of artist.relations || []) {
+        const target = rel["release-group"] || rel.release;
+        if (!target || !ROLES[rel.type]) continue;
+        const role = rel.type === "instrument" || rel.type === "vocal" ? plainAttributes(rel).map(instrument).join(", ") || ROLES[rel.type] : ROLES[rel.type];
+        credited.push({ t: target.title, y: (target["first-release-date"] || target.date || "").slice(0, 4), r: role });
+      }
+      return {
+        name: artist.name,
+        about: artist.disambiguation || "",
+        own: (own["release-groups"] || []).map((g) => ({ t: g.title, y: (g["first-release-date"] || "").slice(0, 4) })),
+        credited: credited.filter((c, i) => credited.findIndex((o) => o.t === c.t && o.r === c.r) === i),
+      };
+    } catch (e) {
+      return { retry: true };
+    }
+  });
+}
+
 async function cached(context, kind, params, work) {
   const cacheKey = new Request(`https://lookup-cache.westerholt.dk/${kind}?` + new URLSearchParams(params));
   const cache = caches.default;
@@ -145,7 +272,7 @@ async function cached(context, kind, params, work) {
   if (hit) return hit.json();
   const result = await work();
   if (result.retry) return result; // a lookup failed: don't remember the empty answer
-  const found = result.url || (result.tracks && result.tracks.length) || (result.hits && result.hits.length);
+  const found = result.url || (result.tracks && result.tracks.length) || (result.hits && result.hits.length) || result.name;
   const days = found ? 30 : 2;
   context.waitUntil(cache.put(cacheKey, new Response(JSON.stringify(result), {
     headers: { "Content-Type": "application/json", "Cache-Control": `max-age=${days * 86400}` },
@@ -155,7 +282,12 @@ async function cached(context, kind, params, work) {
 
 async function getJson(url, brainz) {
   const headers = brainz ? { "User-Agent": "westerholt.dk-pladesamling/1.0 ( https://westerholt.dk )", Accept: "application/json" } : {};
-  const response = await fetch(url, { headers });
+  let response = await fetch(url, { headers });
+  if (brainz && response.status === 503) {
+    // MusicBrainz allows about one request per second; wait a moment and try once more.
+    await new Promise((resolve) => setTimeout(resolve, 1100));
+    response = await fetch(url, { headers });
+  }
   if (!response.ok) throw new Error(`${response.status} ${url}`);
   return response.json();
 }
