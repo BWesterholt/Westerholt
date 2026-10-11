@@ -63,8 +63,11 @@ export async function onRequest(context) {
       headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "private, no-cache", "X-Robots-Tag": "noindex" },
     });
   }
-  if (path === "/cover") {
-    return json(await findCover(context, url.searchParams.get("a") || "", url.searchParams.get("b") || ""));
+  if (path === "/info") {
+    return json(await findInfo(context, url.searchParams.get("a") || "", url.searchParams.get("b") || ""));
+  }
+  if (path === "/sang") {
+    return json(await findSong(context, url.searchParams.get("q") || ""));
   }
   if (path !== "/") {
     return Response.redirect(new URL(base, url), 302);
@@ -84,57 +87,116 @@ function fromBase64(text) {
   return Uint8Array.from(atob(text), (c) => c.charCodeAt(0));
 }
 
-// Finds a cover picture: first in Apple's music catalogue, then in MusicBrainz / Cover Art Archive.
-// Results are kept in Cloudflare's cache so each record is only looked up once in a while.
-async function findCover(context, artist, album) {
-  const cacheKey = new Request("https://cover-cache.westerholt.dk/v1?" + new URLSearchParams({ a: artist, b: album }));
+// Finds a cover picture and the track list: first in Apple's music catalogue, then in
+// MusicBrainz / Cover Art Archive. Results are kept in Cloudflare's cache for a while.
+async function findInfo(context, artist, album) {
+  const name = searchArtist(artist);
+  const title = searchTitle(album);
+  return cached(context, "info/v2", { a: artist, b: album }, async () => {
+    let failed = false;
+    const apple = await fromItunes(name, title).catch(() => { failed = true; return null; });
+    let result = apple || { url: null, tracks: [] };
+    if (!apple || !apple.url || !apple.tracks.length) {
+      const brainz = await fromMusicBrainz(name, title).catch(() => { failed = true; return null; });
+      if (brainz) {
+        result = {
+          url: result.url || brainz.url,
+          kilde: result.url ? result.kilde : brainz.url && "Cover Art Archive",
+          tracks: result.tracks.length ? result.tracks : brainz.tracks,
+          spor: result.tracks.length ? result.spor : brainz.tracks.length ? "MusicBrainz" : undefined,
+        };
+      }
+    }
+    if (failed && !result.url && !result.tracks.length) result.retry = true;
+    return result;
+  });
+}
+
+// Finds records with a song of this title, in Apple's catalogue and MusicBrainz.
+// Returns artist/album/track hits; the page matches them against the collection itself.
+async function findSong(context, query) {
+  const q = query.trim().slice(0, 80);
+  if (q.length < 3) return { hits: [] };
+  return cached(context, "song/v1", { q: q.toLowerCase() }, async () => {
+    const wanted = normalize(q);
+    const hits = [];
+    const [apple, brainz] = await Promise.all([
+      getJson("https://itunes.apple.com/search?" + new URLSearchParams({ term: q, entity: "song", attribute: "songTerm", limit: "200", country: "DK" })).catch(() => ({ failed: true })),
+      getJson("https://musicbrainz.org/ws/2/recording/?fmt=json&limit=100&query=" + encodeURIComponent(`recording:"${q.replace(/"/g, "")}"`), true).catch(() => ({ failed: true })),
+    ]);
+    for (const r of (apple && apple.results) || []) {
+      if (normalize(r.trackName).includes(wanted)) hits.push({ a: r.artistName, b: r.collectionName, t: r.trackName });
+    }
+    for (const r of (brainz && brainz.recordings) || []) {
+      if (!normalize(r.title).includes(wanted)) continue;
+      const by = (r["artist-credit"] || []).map((c) => c.name + (c.joinphrase || "")).join("");
+      for (const release of r.releases || []) hits.push({ a: by, b: release.title, t: r.title });
+    }
+    const seen = new Set();
+    if (apple.failed && brainz.failed) return { hits: [], retry: true };
+    return { hits: hits.filter((h) => { const k = normalize(h.a) + "|" + normalize(h.b) + "|" + normalize(h.t); return !seen.has(k) && seen.add(k); }) };
+  });
+}
+
+async function cached(context, kind, params, work) {
+  const cacheKey = new Request(`https://lookup-cache.westerholt.dk/${kind}?` + new URLSearchParams(params));
   const cache = caches.default;
   const hit = await cache.match(cacheKey);
   if (hit) return hit.json();
-
-  const name = searchArtist(artist);
-  const title = searchTitle(album);
-  let result = { url: null };
-  try {
-    result = (await fromItunes(name, title)) || (await fromMusicBrainz(name, title)) || result;
-  } catch (e) {
-    return result; // don't cache errors
-  }
-  const days = result.url ? 30 : 3;
+  const result = await work();
+  if (result.retry) return result; // a lookup failed: don't remember the empty answer
+  const found = result.url || (result.tracks && result.tracks.length) || (result.hits && result.hits.length);
+  const days = found ? 30 : 2;
   context.waitUntil(cache.put(cacheKey, new Response(JSON.stringify(result), {
     headers: { "Content-Type": "application/json", "Cache-Control": `max-age=${days * 86400}` },
   })));
   return result;
 }
 
+async function getJson(url, brainz) {
+  const headers = brainz ? { "User-Agent": "westerholt.dk-pladesamling/1.0 ( https://westerholt.dk )", Accept: "application/json" } : {};
+  const response = await fetch(url, { headers });
+  if (!response.ok) throw new Error(`${response.status} ${url}`);
+  return response.json();
+}
+
 async function fromItunes(name, title) {
-  const query = new URLSearchParams({ term: `${name} ${title}`, entity: "album", limit: "15", country: "DK" });
-  const response = await fetch("https://itunes.apple.com/search?" + query);
-  if (!response.ok) return null;
-  const { results = [] } = await response.json();
+  const { results = [] } = await getJson("https://itunes.apple.com/search?" + new URLSearchParams({ term: `${name} ${title}`, entity: "album", limit: "15", country: "DK" }));
   let best = null;
   for (const r of results) {
-    if (!r.artworkUrl100 || !similar(r.artistName, name)) continue;
+    if (!similar(r.artistName, name)) continue;
     const score = titleScore(r.collectionName, title);
-    if (score > 0 && (!best || score > best.score)) best = { score, url: r.artworkUrl100.replace("100x100bb", "600x600bb"), kilde: "Apple Music" };
+    if (score > 0 && (!best || score > best.score)) best = { score, r };
   }
-  return best && { url: best.url, kilde: best.kilde };
+  if (!best) return null;
+  const tracks = [];
+  try {
+    const lookup = await getJson("https://itunes.apple.com/lookup?" + new URLSearchParams({ id: best.r.collectionId, entity: "song", country: "DK" }));
+    for (const t of lookup.results || []) {
+      if (t.wrapperType === "track") tracks.push({ d: t.discNumber || 1, n: t.trackNumber, t: t.trackName, ms: t.trackTimeMillis || 0 });
+    }
+    tracks.sort((x, y) => x.d - y.d || x.n - y.n);
+  } catch (e) {}
+  const url = best.r.artworkUrl100 ? best.r.artworkUrl100.replace("100x100bb", "600x600bb") : null;
+  return { url, kilde: url ? "Apple Music" : undefined, tracks, spor: tracks.length ? "Apple Music" : undefined };
 }
 
 async function fromMusicBrainz(name, title) {
   const query = `artist:"${name.replace(/"/g, "")}" AND releasegroup:"${title.replace(/"/g, "")}"`;
-  const response = await fetch("https://musicbrainz.org/ws/2/release-group/?fmt=json&limit=5&query=" + encodeURIComponent(query), {
-    headers: { "User-Agent": "westerholt.dk-pladesamling/1.0 ( https://westerholt.dk )", Accept: "application/json" },
-  });
-  if (!response.ok) return null;
-  const { "release-groups": groups = [] } = await response.json();
-  for (const g of groups) {
-    if (g.score < 85 || titleScore(g.title, title) === 0) continue;
-    const art = `https://coverartarchive.org/release-group/${g.id}/front-500`;
-    const check = await fetch(art, { method: "HEAD" });
-    if (check.ok) return { url: art, kilde: "Cover Art Archive" };
+  const { "release-groups": groups = [] } = await getJson("https://musicbrainz.org/ws/2/release-group/?fmt=json&limit=5&query=" + encodeURIComponent(query), true);
+  const group = groups.find((g) => g.score >= 85 && titleScore(g.title, title) > 0);
+  if (!group) return null;
+  const art = `https://coverartarchive.org/release-group/${group.id}/front-500`;
+  const [check, releases] = await Promise.all([
+    fetch(art, { method: "HEAD" }).catch(() => ({ ok: false })),
+    getJson(`https://musicbrainz.org/ws/2/release?fmt=json&limit=10&inc=recordings&release-group=${group.id}`, true).catch(() => null),
+  ]);
+  const tracks = [];
+  const release = ((releases && releases.releases) || []).find((r) => (r.media || []).some((m) => (m.tracks || []).length));
+  if (release) {
+    release.media.forEach((m, i) => (m.tracks || []).forEach((t) => tracks.push({ d: m.position || i + 1, n: t.position, t: t.title, ms: t.length || 0 })));
   }
-  return null;
+  return { url: check.ok ? art : null, tracks };
 }
 
 // "Adams, Bryan" -> "Bryan Adams" (but leave names like "Crosby, Stills & Nash" alone).
