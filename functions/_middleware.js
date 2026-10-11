@@ -64,13 +64,16 @@ export async function onRequest(context) {
     });
   }
   if (path === "/info") {
-    return json(await findInfo(context, url.searchParams.get("a") || "", url.searchParams.get("b") || ""));
+    return json(await findInfo(context, url.searchParams.get("a") || "", url.searchParams.get("b") || "", url.searchParams.get("y") || "", url.searchParams.get("m") || ""));
   }
   if (path === "/medvirkende") {
-    return json(await findCredits(context, url.searchParams.get("a") || "", url.searchParams.get("b") || ""));
+    return json(await findCredits(context, url.searchParams.get("a") || "", url.searchParams.get("b") || "", url.searchParams.get("y") || "", url.searchParams.get("m") || ""));
   }
   if (path === "/person") {
     return json(await findPerson(context, url.searchParams.get("id") || ""));
+  }
+  if (path === "/kunstnere") {
+    return json(await findArtistsOf(context, url.searchParams.get("rg") || "", url.searchParams.get("rel") || ""));
   }
   if (path === "/sang") {
     return json(await findSong(context, url.searchParams.get("q") || ""));
@@ -95,15 +98,15 @@ function fromBase64(text) {
 
 // Finds a cover picture and the track list: first in Apple's music catalogue, then in
 // MusicBrainz / Cover Art Archive. Results are kept in Cloudflare's cache for a while.
-async function findInfo(context, artist, album) {
+async function findInfo(context, artist, album, year, medium) {
   const name = searchArtist(artist);
   const title = searchTitle(album);
-  return cached(context, "info/v2", { a: artist, b: album }, async () => {
+  return cached(context, "info/v3", { a: artist, b: album, y: year, m: medium }, async () => {
     let failed = false;
-    const apple = await fromItunes(name, title).catch(() => { failed = true; return null; });
+    const apple = await fromItunes(name, title, year).catch(() => { failed = true; return null; });
     let result = apple || { url: null, tracks: [] };
     if (!apple || !apple.url || !apple.tracks.length) {
-      const brainz = await fromMusicBrainz(name, title).catch(() => { failed = true; return null; });
+      const brainz = await fromMusicBrainz(name, title, year, medium).catch(() => { failed = true; return null; });
       if (brainz) {
         result = {
           url: result.url || brainz.url,
@@ -146,23 +149,19 @@ async function findSong(context, query) {
 
 // Who produced and played on each song, from MusicBrainz. Credits for the whole album
 // (release level) are returned separately from the per-song credits.
-async function findCredits(context, artist, album) {
+async function findCredits(context, artist, album, year, medium) {
   const name = searchArtist(artist);
   const title = searchTitle(album);
-  return cached(context, "credits/v1", { a: artist, b: album }, async () => {
-    const query = `artist:"${name.replace(/"/g, "")}" AND releasegroup:"${title.replace(/"/g, "")}"`;
-    let groups;
+  return cached(context, "credits/v2", { a: artist, b: album, y: year, m: medium }, async () => {
+    let group;
     try {
-      ({ "release-groups": groups = [] } = await getJson("https://musicbrainz.org/ws/2/release-group/?fmt=json&limit=5&query=" + encodeURIComponent(query), true));
+      group = await findReleaseGroup(name, title, year);
     } catch (e) {
       return { album: [], tracks: [], retry: true };
     }
-    const group = groups.find((g) => g.score >= 85 && titleScore(g.title, title) > 0);
     if (!group) return { album: [], tracks: [] };
     try {
-      const { releases = [] } = await getJson(`https://musicbrainz.org/ws/2/release?fmt=json&limit=25&release-group=${group.id}`, true);
-      // Prefer an official release; the first one listed is usually the original.
-      const pick = releases.filter((r) => r.status === "Official").concat(releases).slice(0, 2);
+      const pick = await pickReleases(group.id, year, medium);
       let best = null;
       for (const r of pick) {
         const inc = "recordings+artist-credits+artist-rels+recording-level-rels+work-rels+work-level-rels";
@@ -193,6 +192,46 @@ function creditsOf(release) {
     }
   }
   return { album: merge(album), tracks };
+}
+
+// Finds the album in MusicBrainz. The title must match (ignoring edition words such as
+// "Remastered"), and the album from the year in the Excel sheet wins over reissues and
+// compilations with similar names.
+async function findReleaseGroup(name, title, year) {
+  const query = `artist:"${name.replace(/"/g, "")}" AND releasegroup:"${title.replace(/"/g, "")}"`;
+  const { "release-groups": groups = [] } = await getJson("https://musicbrainz.org/ws/2/release-group/?fmt=json&limit=25&query=" + encodeURIComponent(query), true);
+  const candidates = groups.filter((g) => g.score >= 60 && sameAlbum(g.title, title, name) &&
+    (g["artist-credit"] || []).some((c) => similar(c.name, name) || similar((c.artist || {}).name, name)));
+  return best(candidates, (g) => yearGap(g["first-release-date"], year) * 10 +
+    ((g["secondary-types"] || []).includes("Compilation") ? 5 : 0) + ((g["secondary-types"] || []).includes("Live") ? 1 : 0));
+}
+
+// The release (edition) closest to the record: same year and format (vinyl or CD) first.
+async function pickReleases(groupId, year, medium) {
+  const { releases = [] } = await getJson(`https://musicbrainz.org/ws/2/release?fmt=json&limit=50&inc=media&release-group=${groupId}`, true);
+  const wantVinyl = /^(LP|MX|Vinyl)/i.test(medium), wantCd = /^CD/i.test(medium);
+  const cost = (r) => {
+    const formats = (r.media || []).map((m) => m.format || "").join(" ");
+    const formatGap = wantVinyl ? (/vinyl/i.test(formats) ? 0 : 3) : wantCd ? (/CD/.test(formats) ? 0 : 3) : 0;
+    return yearGap(r.date, year) * 2 + formatGap + (r.status === "Official" ? 0 : 4);
+  };
+  return releases.slice().sort((x, y) => cost(x) - cost(y)).slice(0, 2);
+}
+
+function yearGap(date, year) {
+  const found = parseInt(String(date || "").slice(0, 4), 10);
+  const wanted = parseInt(year, 10);
+  if (!found || !wanted) return 3;
+  return Math.min(Math.abs(found - wanted), 20);
+}
+
+function best(list, cost) {
+  let winner = null, lowest = Infinity;
+  for (const item of list) {
+    const c = cost(item);
+    if (c < lowest) { lowest = c; winner = item; }
+  }
+  return winner;
 }
 
 // Turns MusicBrainz relationships into [{r: role, n: name, id}] entries.
@@ -240,7 +279,7 @@ function instrument(name) {
 // Everything a person has released or is credited on, from MusicBrainz.
 async function findPerson(context, id) {
   if (!/^[0-9a-f-]{36}$/.test(id)) return { error: "ukendt" };
-  return cached(context, "person/v1", { id }, async () => {
+  return cached(context, "person/v2", { id }, async () => {
     try {
       const [artist, own] = await Promise.all([
         getJson(`https://musicbrainz.org/ws/2/artist/${id}?fmt=json&inc=release-group-rels+release-rels`, true),
@@ -251,7 +290,7 @@ async function findPerson(context, id) {
         const target = rel["release-group"] || rel.release;
         if (!target || !ROLES[rel.type]) continue;
         const role = rel.type === "instrument" || rel.type === "vocal" ? plainAttributes(rel).map(instrument).join(", ") || ROLES[rel.type] : ROLES[rel.type];
-        credited.push({ t: target.title, y: (target["first-release-date"] || target.date || "").slice(0, 4), r: role });
+        credited.push({ t: target.title, y: (target["first-release-date"] || target.date || "").slice(0, 4), r: role, id: target.id, k: rel["release-group"] ? "rg" : "rel" });
       }
       return {
         name: artist.name,
@@ -265,6 +304,29 @@ async function findPerson(context, id) {
   });
 }
 
+// The main artist of some albums and releases (people's credits only give the album title).
+async function findArtistsOf(context, rgIds, releaseIds) {
+  const clean = (ids) => ids.split(",").filter((id) => /^[0-9a-f-]{36}$/.test(id)).slice(0, 40);
+  const rg = clean(rgIds), rel = clean(releaseIds);
+  return cached(context, "artists/v1", { rg: rg.join(","), rel: rel.join(",") }, async () => {
+    const out = {};
+    const credit = (x) => (x["artist-credit"] || []).map((c) => c.name + (c.joinphrase || "")).join("");
+    try {
+      if (rg.length) {
+        const r = await getJson("https://musicbrainz.org/ws/2/release-group/?fmt=json&limit=100&query=" + encodeURIComponent(rg.map((id) => "rgid:" + id).join(" OR ")), true);
+        for (const g of r["release-groups"] || []) out[g.id] = credit(g);
+      }
+      if (rel.length) {
+        const r = await getJson("https://musicbrainz.org/ws/2/release/?fmt=json&limit=100&query=" + encodeURIComponent(rel.map((id) => "reid:" + id).join(" OR ")), true);
+        for (const x of r.releases || []) out[x.id] = credit(x);
+      }
+    } catch (e) {
+      return { artists: out, retry: true };
+    }
+    return { artists: out, found: Object.keys(out).length };
+  });
+}
+
 async function cached(context, kind, params, work) {
   const cacheKey = new Request(`https://lookup-cache.westerholt.dk/${kind}?` + new URLSearchParams(params));
   const cache = caches.default;
@@ -272,7 +334,7 @@ async function cached(context, kind, params, work) {
   if (hit) return hit.json();
   const result = await work();
   if (result.retry) return result; // a lookup failed: don't remember the empty answer
-  const found = result.url || (result.tracks && result.tracks.length) || (result.hits && result.hits.length) || result.name;
+  const found = result.url || (result.tracks && result.tracks.length) || (result.hits && result.hits.length) || result.name || result.found;
   const days = found ? 30 : 2;
   context.waitUntil(cache.put(cacheKey, new Response(JSON.stringify(result), {
     headers: { "Content-Type": "application/json", "Cache-Control": `max-age=${days * 86400}` },
@@ -292,39 +354,37 @@ async function getJson(url, brainz) {
   return response.json();
 }
 
-async function fromItunes(name, title) {
-  const { results = [] } = await getJson("https://itunes.apple.com/search?" + new URLSearchParams({ term: `${name} ${title}`, entity: "album", limit: "15", country: "DK" }));
-  let best = null;
-  for (const r of results) {
-    if (!similar(r.artistName, name)) continue;
-    const score = titleScore(r.collectionName, title);
-    if (score > 0 && (!best || score > best.score)) best = { score, r };
-  }
-  if (!best) return null;
+async function fromItunes(name, title, year) {
+  const { results = [] } = await getJson("https://itunes.apple.com/search?" + new URLSearchParams({ term: `${name} ${title}`, entity: "album", limit: "50", country: "DK" }));
+  const candidates = results.filter((r) => similar(r.artistName, name) && sameAlbum(r.collectionName, title, name));
+  // Apple often dates remasters by the reissue, so the year only decides between equal titles.
+  const pickR = best(candidates, (r) => yearGap(r.releaseDate, year) + (/compilation/i.test(r.collectionType || "") ? 5 : 0) + (r.collectionExplicitness === "cleaned" ? 1 : 0));
+  if (!pickR) return null;
+  const best_ = { r: pickR };
   const tracks = [];
   try {
-    const lookup = await getJson("https://itunes.apple.com/lookup?" + new URLSearchParams({ id: best.r.collectionId, entity: "song", country: "DK" }));
+    const lookup = await getJson("https://itunes.apple.com/lookup?" + new URLSearchParams({ id: best_.r.collectionId, entity: "song", country: "DK" }));
     for (const t of lookup.results || []) {
       if (t.wrapperType === "track") tracks.push({ d: t.discNumber || 1, n: t.trackNumber, t: t.trackName, ms: t.trackTimeMillis || 0 });
     }
     tracks.sort((x, y) => x.d - y.d || x.n - y.n);
   } catch (e) {}
-  const url = best.r.artworkUrl100 ? best.r.artworkUrl100.replace("100x100bb", "600x600bb") : null;
+  const url = best_.r.artworkUrl100 ? best_.r.artworkUrl100.replace("100x100bb", "600x600bb") : null;
   return { url, kilde: url ? "Apple Music" : undefined, tracks, spor: tracks.length ? "Apple Music" : undefined };
 }
 
-async function fromMusicBrainz(name, title) {
-  const query = `artist:"${name.replace(/"/g, "")}" AND releasegroup:"${title.replace(/"/g, "")}"`;
-  const { "release-groups": groups = [] } = await getJson("https://musicbrainz.org/ws/2/release-group/?fmt=json&limit=5&query=" + encodeURIComponent(query), true);
-  const group = groups.find((g) => g.score >= 85 && titleScore(g.title, title) > 0);
+async function fromMusicBrainz(name, title, year, medium) {
+  const group = await findReleaseGroup(name, title, year);
   if (!group) return null;
   const art = `https://coverartarchive.org/release-group/${group.id}/front-500`;
   const [check, releases] = await Promise.all([
     fetch(art, { method: "HEAD" }).catch(() => ({ ok: false })),
-    getJson(`https://musicbrainz.org/ws/2/release?fmt=json&limit=10&inc=recordings&release-group=${group.id}`, true).catch(() => null),
+    pickReleases(group.id, year, medium)
+      .then((list) => list.length ? getJson(`https://musicbrainz.org/ws/2/release/${list[0].id}?fmt=json&inc=recordings`, true) : null)
+      .catch(() => null),
   ]);
   const tracks = [];
-  const release = ((releases && releases.releases) || []).find((r) => (r.media || []).some((m) => (m.tracks || []).length));
+  const release = releases && (releases.media || []).some((m) => (m.tracks || []).length) ? releases : null;
   if (release) {
     release.media.forEach((m, i) => (m.tracks || []).forEach((t) => tracks.push({ d: m.position || i + 1, n: t.position, t: t.title, ms: t.length || 0 })));
   }
@@ -354,15 +414,23 @@ function similar(a, b) {
   return x === y || x.includes(y) || y.includes(x);
 }
 
-// 3 = same title, 2 = one contains the other (e.g. "Remastered" editions), 1 = most words shared, 0 = no match.
-function titleScore(found, wanted) {
-  const x = normalize(found.replace(/\(.*?\)|\[.*?\]/g, " ")), y = normalize(wanted);
-  if (!x || !y) return 0;
-  if (x === y) return 3;
-  if (x.includes(y) || y.includes(x)) return 2;
-  const words = y.split(" ");
-  const shared = words.filter((w) => x.split(" ").includes(w)).length;
-  return shared / words.length >= 0.75 ? 1 : 0;
+// Same album title, ignoring brackets, edition words ("Remastered", "Deluxe Edition" …),
+// a " - Remastered 2014"-style suffix and the artist's name in front ("Led Zeppelin IV" = "IV").
+const EDITION = /\b(remaster(ed)?|deluxe|edition|expanded|anniversary|version|bonus|tracks?|mono|stereo|digital|legacy|special|collectors?|super|reissue|\d+(th|st|nd|rd))\b/g;
+function bareAlbum(text, artist) {
+  let x = normalize(String(text || "").replace(/\(.*?\)|\[.*?\]/g, " "));
+  const dash = String(text || "").split(" - ");
+  if (dash.length > 1 && EDITION.test(normalize(dash[dash.length - 1]))) x = normalize(dash.slice(0, -1).join(" - ").replace(/\(.*?\)|\[.*?\]/g, " "));
+  EDITION.lastIndex = 0;
+  x = x.replace(EDITION, " ").replace(/\s+/g, " ").trim() || x;
+  const a = normalize(artist);
+  if (a && x.startsWith(a + " ")) x = x.slice(a.length + 1);
+  return x;
+}
+
+function sameAlbum(found, wanted, artist) {
+  const x = bareAlbum(found, artist), y = bareAlbum(wanted, artist);
+  return !!x && x === y;
 }
 
 function json(data, status = 200) {
