@@ -1,1 +1,831 @@
+<!doctype html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Benjamin Westerholt — Økonomi, data &amp; finans</title>
+<meta name="description" content="Benjamin Westerholt — Student Assistant i Financial Planning &amp; Reporting hos Shell Low Carbon Solutions Biogas og økonomiansvarlig i Valoks. Odense, Danmark.">
+<meta name="author" content="Benjamin Westerholt">
+<meta name="theme-color" content="#ECEEEF">
+<link rel="canonical" href="https://westerholt.dk/">
+<meta property="og:type" content="profile">
+<meta property="og:url" content="https://westerholt.dk/">
+<meta property="og:locale" content="da_DK">
+<meta property="og:title" content="Benjamin Westerholt — Økonomi, data &amp; finans">
+<meta property="og:description" content="Financial Planning &amp; Reporting hos Shell Low Carbon Solutions Biogas. Økonomiansvarlig i Valoks. Odense, Danmark.">
 
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%23161D22'/%3E%3Crect x='7' y='22.5' width='18' height='1.3' fill='%232A6158'/%3E%3Ctext x='16' y='20' font-family='Helvetica,Arial,sans-serif' font-weight='600' font-size='14' letter-spacing='-0.6' fill='%23ECEEEF' text-anchor='middle'%3EBW%3C/text%3E%3C/svg%3E">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Schibsted+Grotesk:wght@400..700&display=swap" rel="stylesheet">
+
+<style>
+/* ════════════════════════════════════════════════════════════
+   westerholt.dk — digitalt visitkort
+   Papir: køligt lysegråt. Blæk: skifer. Accent: petroleumsgrøn.
+   ════════════════════════════════════════════════════════════ */
+
+:root{
+  --bg:#ECEEEF;
+  --bg-soft:#F4F5F6;
+  --bg-tint:#E4E7E8;
+
+  --ink:#161D22;
+  --text:#3B454C;
+  --muted:#5D6870;
+  --faint:#8B959B;
+
+  --line:#D6DADC;
+  --line-soft:#E1E4E6;
+
+  --accent:#2A6158;
+  --accent-hi:#337A6E;
+  --accent-wash:rgba(42,97,88,.08);
+
+  --sans:'Schibsted Grotesk','Helvetica Neue',Arial,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
+
+  --pad:clamp(1.25rem,5vw,4rem);
+  --maxw:1080px;
+  --ease:cubic-bezier(.19,.86,.28,1);
+}
+
+*,*::before,*::after{box-sizing:border-box}
+
+html{
+  -webkit-text-size-adjust:100%;
+  scroll-behavior:smooth;
+  scroll-padding-top:5rem;
+}
+
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--sans);
+  font-size:clamp(1rem,.97rem + .16vw,1.06rem);
+  font-weight:400;
+  line-height:1.68;
+  letter-spacing:-.006em;
+  font-variant-numeric:tabular-nums;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  overflow-x:hidden;
+}
+
+h1,h2,h3,h4{margin:0;color:var(--ink);font-weight:600;line-height:1.12;letter-spacing:-.028em;text-wrap:balance}
+p{margin:0 0 1.05em;text-wrap:pretty}
+p:last-child{margin-bottom:0}
+strong{font-weight:600;color:var(--ink)}
+a{color:inherit;text-decoration:none}
+
+::selection{background:var(--accent);color:#fff}
+
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px}
+
+.wrap{width:100%;max-width:var(--maxw);margin-inline:auto;padding-inline:var(--pad)}
+
+.mono{
+  font-family:var(--mono);
+  font-size:.7rem;
+  font-weight:500;
+  letter-spacing:.13em;
+  text-transform:uppercase;
+}
+
+.skip{
+  position:absolute;left:-9999px;top:0;z-index:99;
+  background:var(--ink);color:var(--bg);
+  padding:.7rem 1.1rem;font-size:.85rem;
+}
+.skip:focus{left:1rem;top:1rem}
+
+/* ── Læseindikator ─────────────────────────────────────────── */
+
+#progress{
+  position:fixed;top:0;left:0;right:0;height:2px;z-index:60;
+  background:var(--accent);
+  transform:scaleX(0);
+  transform-origin:0 50%;
+  will-change:transform;
+}
+@supports (animation-timeline:scroll()){
+  #progress{
+    animation:grow linear both;
+    animation-timeline:scroll(root block);
+  }
+  @keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+}
+
+/* ── Topbjælke ─────────────────────────────────────────────── */
+
+.bar{
+  position:fixed;top:0;left:0;right:0;z-index:50;
+  display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  padding:.85rem var(--pad);
+  background:color-mix(in srgb,var(--bg) 78%,transparent);
+  backdrop-filter:blur(12px) saturate(160%);
+  -webkit-backdrop-filter:blur(12px) saturate(160%);
+  border-bottom:1px solid transparent;
+  opacity:0;transform:translateY(-102%);pointer-events:none;
+  transition:opacity .45s var(--ease),transform .45s var(--ease),border-color .45s var(--ease);
+}
+.bar.show{opacity:1;transform:none;pointer-events:auto;border-bottom-color:var(--line)}
+.bar__name{font-weight:600;font-size:.92rem;letter-spacing:-.02em;color:var(--ink);white-space:nowrap}
+.bar__nav{display:flex;align-items:center;gap:1.5rem}
+.bar__nav a{color:var(--muted);transition:color .3s var(--ease)}
+.bar__nav a:hover{color:var(--accent)}
+@media (max-width:780px){.bar__nav a:not(.is-cta){display:none}}
+.bar__nav .is-cta{color:var(--accent)}
+
+/* ── Hero ──────────────────────────────────────────────────── */
+
+.hero{
+  min-height:min(88svh,860px);
+  display:flex;flex-direction:column;justify-content:center;
+  padding-block:clamp(6rem,15vh,9rem) clamp(3rem,7vh,4.5rem);
+}
+
+.status{
+  display:inline-flex;align-items:center;gap:.6rem;
+  align-self:flex-start;
+  padding:.45rem .85rem .45rem .7rem;
+  border:1px solid var(--line);
+  border-radius:100px;
+  background:var(--bg-soft);
+  color:var(--muted);
+  font-family:var(--mono);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;
+}
+.pip{
+  width:6px;height:6px;border-radius:50%;background:var(--accent);flex:none;
+  box-shadow:0 0 0 0 rgba(42,97,88,.4);
+  animation:pip 3.6s var(--ease) infinite;
+}
+@keyframes pip{0%,100%{box-shadow:0 0 0 0 rgba(42,97,88,.35)}55%{box-shadow:0 0 0 6px rgba(42,97,88,0)}}
+
+.hero h1{
+  margin-top:clamp(1.5rem,4vh,2.25rem);
+  font-size:clamp(2.6rem,8.4vw,5.1rem);
+  font-weight:600;
+  letter-spacing:-.042em;
+  line-height:.98;
+}
+.hero h1 .sur{display:block;color:var(--accent)}
+
+.hero__roles{
+  margin-top:clamp(1.5rem,3.5vh,2.25rem);
+  max-width:38ch;
+  font-size:clamp(1.05rem,1.5vw,1.18rem);
+  line-height:1.55;
+  color:var(--text);
+}
+.hero__roles b{display:block;color:var(--ink);font-weight:600;letter-spacing:-.018em}
+.hero__roles span{color:var(--muted);font-size:.94rem}
+.hero__roles div + div{margin-top:.85rem}
+
+.hero__meta{
+  margin-top:clamp(1.75rem,4vh,2.5rem);
+  color:var(--faint);
+  display:flex;flex-wrap:wrap;gap:.5rem .9rem;align-items:center;
+}
+.hero__meta .sep{color:var(--line)}
+
+.actions{display:flex;flex-wrap:wrap;gap:.65rem;margin-top:clamp(1.75rem,4vh,2.5rem)}
+
+.btn{
+  display:inline-flex;align-items:center;gap:.55rem;
+  padding:.72rem 1.15rem;
+  border:1px solid var(--line);
+  border-radius:3px;
+  background:var(--bg-soft);
+  color:var(--ink);
+  font-family:var(--mono);font-size:.7rem;font-weight:500;
+  letter-spacing:.11em;text-transform:uppercase;
+  cursor:pointer;
+  transition:background .3s var(--ease),border-color .3s var(--ease),color .3s var(--ease),transform .3s var(--ease);
+}
+.btn:hover{background:var(--accent);border-color:var(--accent);color:#fff;transform:translateY(-1px)}
+.btn svg{width:13px;height:13px;flex:none;stroke-width:1.7}
+.btn--solid{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.btn--solid:hover{background:var(--accent);border-color:var(--accent)}
+
+/* ── Sektioner ─────────────────────────────────────────────── */
+
+.sec{padding-block:clamp(3.5rem,9vw,6.5rem);scroll-margin-top:4.5rem}
+.sec + .sec{border-top:1px solid var(--line-soft)}
+
+.sec__head{
+  display:flex;align-items:baseline;gap:1rem;
+  margin-bottom:clamp(2rem,4.5vw,3rem);
+}
+.sec__no{color:var(--accent);flex:none}
+.sec__head h2{font-size:clamp(1.3rem,2.6vw,1.75rem);letter-spacing:-.03em}
+.sec__head .rule{flex:1 1 auto;height:1px;background:var(--line);min-width:1rem}
+.sec__head .aside{color:var(--faint);flex:none;white-space:nowrap}
+@media (max-width:640px){.sec__head .aside{display:none}}
+
+/* ── Om mig ────────────────────────────────────────────────── */
+
+.about{
+  display:grid;
+  grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);
+  gap:clamp(2rem,5vw,4rem);
+  align-items:start;
+}
+@media (max-width:880px){.about{grid-template-columns:1fr}}
+
+.about__lede{
+  font-size:clamp(1.14rem,1.9vw,1.38rem);
+  line-height:1.5;
+  letter-spacing:-.02em;
+  color:var(--ink);
+  font-weight:400;
+  margin-bottom:1.35em;
+}
+
+.facts{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  border:1px solid var(--line);
+  border-radius:4px;
+  overflow:hidden;
+  background:var(--bg-soft);
+}
+.fact{padding:1.05rem 1.1rem;border-bottom:1px solid var(--line-soft)}
+.fact:nth-child(odd){border-right:1px solid var(--line-soft)}
+.fact:nth-last-child(-n+2){border-bottom:0}
+.fact dt{color:var(--faint);margin-bottom:.3rem}
+.fact dd{margin:0;color:var(--ink);font-weight:500;font-size:.95rem;line-height:1.4;letter-spacing:-.015em}
+.fact dd em{font-style:normal;color:var(--muted);font-weight:400;display:block;font-size:.86rem}
+
+/* ── Erfaring ──────────────────────────────────────────────── */
+
+.jobs{border-top:1px solid var(--line-soft)}
+
+.job{
+  position:relative;
+  display:grid;
+  grid-template-columns:9.5rem minmax(0,1fr);
+  gap:0 clamp(1.25rem,3.5vw,3rem);
+  padding:clamp(1.4rem,3vw,2rem) 0 clamp(1.4rem,3vw,2rem) 0;
+  border-bottom:1px solid var(--line-soft);
+  transition:background .35s var(--ease);
+}
+.job::before{
+  content:"";position:absolute;left:calc(var(--pad) * -.45);top:0;bottom:-1px;width:2px;
+  background:var(--accent);transform:scaleY(0);transform-origin:top;
+  transition:transform .4s var(--ease);
+}
+.job:hover{background:linear-gradient(90deg,var(--accent-wash),transparent 55%)}
+.job:hover::before{transform:scaleY(1)}
+@media (max-width:760px){
+  .job{grid-template-columns:1fr;gap:.5rem}
+  .job::before{display:none}
+  .job:hover{background:none}
+}
+
+.job__when{padding-top:.3rem}
+.job__yrs{display:block;color:var(--accent)}
+.job__tag{display:block;color:var(--faint);margin-top:.3rem}
+
+.job h3{font-size:clamp(1.15rem,2.2vw,1.4rem);letter-spacing:-.028em}
+.job__title{
+  font-family:var(--mono);font-size:.72rem;font-weight:500;
+  letter-spacing:.09em;text-transform:uppercase;
+  color:var(--muted);
+  margin:.45rem 0 .75rem;
+}
+.job__desc{max-width:62ch;font-size:.98rem;line-height:1.6}
+.job__note{
+  margin-top:.7rem;color:var(--faint);font-size:.87rem;line-height:1.55;max-width:60ch;
+}
+
+/* ── Uddannelse ────────────────────────────────────────────── */
+
+.edu{border-top:1px solid var(--line-soft)}
+.edu__row{
+  display:grid;
+  grid-template-columns:9.5rem minmax(0,1fr) auto;
+  gap:.35rem clamp(1.25rem,3.5vw,3rem);
+  align-items:center;
+  padding:clamp(1.15rem,2.6vw,1.6rem) 0;
+  border-bottom:1px solid var(--line-soft);
+}
+@media (max-width:760px){
+  .edu__row{grid-template-columns:1fr auto;align-items:baseline}
+  .edu__row .job__yrs{grid-column:1/-1}
+}
+.edu__row h3{font-size:clamp(1.02rem,1.9vw,1.2rem);letter-spacing:-.024em}
+.edu__where{display:block;color:var(--muted);font-size:.9rem;margin-top:.2rem}
+.chip{
+  font-family:var(--mono);font-size:.63rem;font-weight:500;
+  letter-spacing:.12em;text-transform:uppercase;
+  padding:.35rem .6rem;border:1px solid var(--line);border-radius:3px;
+  color:var(--muted);white-space:nowrap;
+}
+.chip--now{border-color:var(--accent);color:var(--accent);background:var(--accent-wash)}
+
+/* ── Kompetencer ───────────────────────────────────────────── */
+
+.skills{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));
+  gap:clamp(2rem,4.5vw,3.5rem);
+}
+.skills h3{
+  font-family:var(--mono);font-size:.7rem;font-weight:500;
+  letter-spacing:.15em;text-transform:uppercase;color:var(--faint);
+  padding-bottom:.75rem;border-bottom:1px solid var(--line);
+}
+.skill{
+  position:relative;
+  display:flex;align-items:baseline;justify-content:space-between;gap:1rem;
+  padding:.8rem 0;
+  border-bottom:1px solid var(--line-soft);
+}
+.skill::after{
+  content:"";position:absolute;left:0;bottom:-1px;height:1px;width:var(--lvl,60%);
+  background:var(--accent);
+  transform:scaleX(0);transform-origin:left;
+  transition:transform 1s var(--ease) var(--sd,0ms);
+}
+.skill.lit::after{transform:scaleX(1)}
+.skill__n{color:var(--ink);font-size:.97rem;letter-spacing:-.014em}
+.skill__v{color:var(--faint);flex:none;font-family:var(--mono);font-size:.65rem;letter-spacing:.1em;text-transform:uppercase}
+
+/* ── Footer ────────────────────────────────────────────────── */
+
+.foot{
+  border-top:1px solid var(--line);
+  padding-block:clamp(3rem,7vw,5rem) clamp(1.75rem,3vw,2.5rem);
+}
+.foot__grid{
+  display:flex;flex-wrap:wrap;justify-content:space-between;gap:2rem;
+  align-items:flex-end;
+}
+.foot h2{font-size:clamp(1.5rem,3.6vw,2.3rem);letter-spacing:-.035em;max-width:16ch;margin-bottom:1.35rem}
+.foot__links{display:flex;flex-wrap:wrap;gap:.65rem}
+.foot__contact{color:var(--muted);font-size:.94rem;line-height:1.9;text-align:right}
+.foot__contact a{color:var(--muted);text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:.28em;transition:color .3s var(--ease),text-decoration-color .3s var(--ease)}
+.foot__contact a:hover{color:var(--accent);text-decoration-color:currentColor}
+@media (max-width:640px){.foot__contact{text-align:left}}
+
+.colophon{
+  display:flex;flex-wrap:wrap;justify-content:space-between;gap:.75rem 1.5rem;
+  margin-top:clamp(2.5rem,6vw,4rem);
+  padding-top:1.25rem;
+  border-top:1px solid var(--line-soft);
+  color:var(--faint);
+}
+.colophon a{color:var(--faint);transition:color .3s var(--ease)}
+.colophon a:hover{color:var(--accent)}
+
+/* ── Bevægelse ─────────────────────────────────────────────── */
+
+.rv{opacity:0;transform:translateY(12px);transition:opacity .75s var(--ease),transform .75s var(--ease);transition-delay:var(--d,0ms)}
+.rv.in{opacity:1;transform:none}
+
+.up{opacity:0;animation:up .9s var(--ease) forwards;animation-delay:var(--d,0ms)}
+@keyframes up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .rv{opacity:1;transform:none}
+  .up{opacity:1;animation:none}
+  .pip{animation:none}
+  .skill::after{transition:none}
+  *{transition-duration:.01ms !important}
+}
+
+/* ── Print: rent CV på A4 ──────────────────────────────────── */
+
+@media print{
+  @page{margin:16mm 14mm}
+  :root{--bg:#fff;--bg-soft:#fff;--ink:#000;--text:#1a1a1a;--muted:#3a3a3a;--faint:#555;--line:#bbb;--line-soft:#ddd;--accent:#1d4a43}
+  body{font-size:10pt;line-height:1.45;background:#fff}
+  #progress,.bar,.actions,.status,.skip,.hero__meta,.sec__head .rule{display:none !important}
+  .hero{min-height:0;padding:0 0 10mm;display:block}
+  .hero h1{font-size:26pt;margin:0}
+  .hero h1 .sur{color:#000}
+  .hero__roles{margin-top:4mm;max-width:none;font-size:10.5pt}
+  .sec{padding-block:6mm;border-top:1px solid #ddd;break-inside:auto}
+  .sec + .sec{border-top:1px solid #ddd}
+  .sec__head{margin-bottom:4mm}
+  .about{grid-template-columns:1.7fr 1fr;gap:8mm}
+  .about__lede{font-size:11pt}
+  .job,.edu__row{break-inside:avoid;padding-block:3mm}
+  .job:hover{background:none}
+  .skills{grid-template-columns:1fr 1fr;gap:8mm}
+  .skill{padding:2mm 0}
+  .skill::after{display:none}
+  .foot__grid,.colophon{display:block}
+  .foot h2,.foot__links{display:none}
+  .foot__contact{text-align:left}
+  .rv,.up{opacity:1 !important;transform:none !important;animation:none !important}
+}
+</style>
+</head>
+<body>
+
+<div id="progress" aria-hidden="true"></div>
+<a class="skip" href="#om">Spring til indholdet</a>
+
+<header class="bar" id="bar">
+  <a class="bar__name" href="#top">Benjamin Westerholt</a>
+  <nav class="bar__nav mono" aria-label="Sektioner">
+    <a href="#om">Om</a>
+    <a href="#erfaring">Erfaring</a>
+    <a href="#uddannelse">Uddannelse</a>
+    <a href="#kompetencer">Kompetencer</a>
+    <a class="is-cta" href="mailto:Benjaminwesterholt@gmail.com">Kontakt</a>
+  </nav>
+</header>
+
+<main id="top">
+
+  <!-- ══ HERO ═══════════════════════════════════════════════ -->
+  <section class="hero wrap">
+    <p class="status up"><span class="pip" aria-hidden="true"></span>Aktuelt hos Shell Biogas</p>
+
+    <h1 class="up" style="--d:80ms">Benjamin<span class="sur">Westerholt</span></h1>
+
+    <div class="hero__roles up" style="--d:170ms">
+      <div>
+        <b>Student Assistant, Financial Planning &amp; Reporting</b>
+        <span>Shell Low Carbon Solutions Biogas</span>
+      </div>
+      <div>
+        <b>Bogholder og økonomiansvarlig</b>
+        <span>Valoks</span>
+      </div>
+    </div>
+
+    <p class="hero__meta mono up" style="--d:250ms">
+      <span>Odense, Danmark</span>
+      <span class="sep" aria-hidden="true">/</span>
+      <span id="clock">—</span>
+      <span class="sep" aria-hidden="true">/</span>
+      <span>Cand.merc. Accounting &amp; Finance, SDU</span>
+    </p>
+
+    <div class="actions up" style="--d:330ms">
+      <button class="btn btn--solid" type="button" id="copy" data-mail="Benjaminwesterholt@gmail.com">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true"><rect x="2" y="4" width="12" height="8" rx="1"/><path d="m2 5 6 4.5L14 5"/></svg>
+        <span id="copyLabel">Kopiér e-mail</span>
+      </button>
+      <a class="btn" href="https://www.linkedin.com/in/bwesterholt" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true"><path d="M6.5 9.5 13 3"/><path d="M8.5 3H13v4.5"/><path d="M13 10v3H3V3h3"/></svg>
+        LinkedIn
+      </a>
+      <button class="btn" type="button" id="pdf">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true"><path d="M8 2v8"/><path d="m5 7.5 3 3 3-3"/><path d="M2.5 12.5v1h11v-1"/></svg>
+        Gem CV som PDF
+      </button>
+    </div>
+  </section>
+
+  <!-- ══ OM MIG ═════════════════════════════════════════════ -->
+  <section class="sec wrap" id="om" aria-labelledby="h-om">
+    <div class="sec__head rv">
+      <span class="sec__no mono">01</span>
+      <h2 id="h-om">Om mig</h2>
+      <span class="rule" aria-hidden="true"></span>
+      <span class="aside mono">To roller, én disciplin</span>
+    </div>
+
+    <div class="about">
+      <div>
+        <p class="about__lede rv">Jeg arbejder med tal, der skal kunne holde til at blive gennemgået — af en ledelse, en revisor eller mig selv en tirsdag morgen.</p>
+
+        <div class="rv" style="--d:70ms">
+          <p>Siden juli 2026 har jeg været <strong>student assistant i Financial Planning &amp; Reporting hos Shell Low Carbon Solutions Biogas</strong>, tidligere Nature Energy, på hovedkontoret i Odense. Jeg arbejder med forecasting og rapportering: afvigelsesanalyse mellem budget, forecast og realiserede tal, vedligehold og videreudvikling af de finansielle modeller, og det beslutningsgrundlag ledelsen læser inden den træffer et valg.</p>
+
+          <p>Sideløbende er jeg <strong>økonomiansvarlig i Valoks</strong>, en dansk softwarevirksomhed i vækst, hvor jeg har bygget økonomifunktionen op fra bunden og driver den alene — fra daglig bogføring og afstemning til finansiel styring af flere tusinde månedlige abonnenter.</p>
+
+          <p>Begge roller handler om det samme: <strong>store datasæt, avanceret Excel og en lav tolerance for tal, der ikke stemmer.</strong> Modellering, analyse og kvalitetssikring er der, min faglige slagkraft ligger. Jeg bruger AI som et fast arbejdsredskab og er i gang med at bygge Python på.</p>
+
+          <p>Jeg læser cand.merc. i Accounting and Finance på Syddansk Universitet efter en bachelor i erhvervsøkonomi samme sted. Målet er en karriere inden for økonomi og finans, hvor dataforståelse og analytisk skarphed gør en reel forskel.</p>
+        </div>
+      </div>
+
+      <dl class="facts rv" style="--d:120ms">
+        <div class="fact">
+          <dt class="mono">Rolle</dt>
+          <dd>Financial Planning &amp; Reporting<em>Shell Biogas</em></dd>
+        </div>
+        <div class="fact">
+          <dt class="mono">Sideløbende</dt>
+          <dd>Økonomiansvarlig<em>Valoks</em></dd>
+        </div>
+        <div class="fact">
+          <dt class="mono">Studie</dt>
+          <dd>Cand.merc.<em>Accounting &amp; Finance, SDU</em></dd>
+        </div>
+        <div class="fact">
+          <dt class="mono">Base</dt>
+          <dd>Odense<em>Danmark</em></dd>
+        </div>
+        <div class="fact">
+          <dt class="mono">Værktøjer</dt>
+          <dd>Excel, Power Query<em>Python i gang, AI dagligt</em></dd>
+        </div>
+        <div class="fact">
+          <dt class="mono">Sprog</dt>
+          <dd>Dansk, engelsk<em>Flydende i skrift og tale</em></dd>
+        </div>
+      </dl>
+    </div>
+  </section>
+
+  <!-- ══ ERFARING ═══════════════════════════════════════════ -->
+  <section class="sec wrap" id="erfaring" aria-labelledby="h-erf">
+    <div class="sec__head rv">
+      <span class="sec__no mono">02</span>
+      <h2 id="h-erf">Erfaring</h2>
+      <span class="rule" aria-hidden="true"></span>
+      <span class="aside mono">5 roller siden 2022</span>
+    </div>
+
+    <div class="jobs">
+
+      <article class="job rv">
+        <div class="job__when mono">
+          <span class="job__yrs">2026 — nu</span>
+          <span class="job__tag">Energi / koncern</span>
+        </div>
+        <div>
+          <h3>Shell Low Carbon Solutions Biogas</h3>
+          <p class="job__title">Student Assistant · Financial Planning &amp; Reporting</p>
+          <p class="job__desc">Del af finansteamet på hovedkontoret i Odense. Jeg optimerer forecast- og rapporteringsprocesser, laver afvigelsesanalyse mellem forecast, budget og realiserede tal, og vedligeholder de finansielle modeller og analyseværktøjer. Derudover udarbejder jeg beslutningsgrundlag til ledelsen og kører ad hoc-analyser på tendenser og forretningsspørgsmål.</p>
+          <p class="job__note">Shell Biogas, tidligere Nature Energy, er europæisk markedsleder inden for udvikling, design, opførelse og drift af industrielle biogasanlæg. 14 anlæg i Europa og omkring 500 medarbejdere.</p>
+        </div>
+      </article>
+
+      <article class="job rv">
+        <div class="job__when mono">
+          <span class="job__yrs">2024 — nu</span>
+          <span class="job__tag">Software / vækst</span>
+        </div>
+        <div>
+          <h3>Valoks</h3>
+          <p class="job__title">Bogholder &amp; økonomiansvarlig</p>
+          <p class="job__desc">Eneste økonomiansvarlige i en dansk softwarevirksomhed i vækst. Jeg har opbygget økonomifunktionen fra bunden og driver den daglige bogføring, afstemning og kvalitetssikring af store datamængder fra tusindvis af månedlige transaktioner.</p>
+        </div>
+      </article>
+
+      <article class="job rv">
+        <div class="job__when mono">
+          <span class="job__yrs">2025 — 2026</span>
+          <span class="job__tag">Offentlig / styrelse</span>
+        </div>
+        <div>
+          <h3>Social- og Boligstyrelsen</h3>
+          <p class="job__title">Studentermedhjælper · Tilskudsøkonomi</p>
+          <p class="job__desc">Selvstændig kontrol og godkendelse af tilskudsregnskaber og revisionsmateriale fra NGO'er. Udarbejdede statistikker og bidrog til kvalitetssikring af interne procedurer.</p>
+        </div>
+      </article>
+
+      <article class="job rv">
+        <div class="job__when mono">
+          <span class="job__yrs">2023 — 2024</span>
+          <span class="job__tag">Detail</span>
+        </div>
+        <div>
+          <h3>Elgiganten</h3>
+          <p class="job__title">Sales Advisor</p>
+          <p class="job__desc">Teknisk rådgivning og salg med fokus på kundeoplevelse og produktviden.</p>
+        </div>
+      </article>
+
+      <article class="job rv">
+        <div class="job__when mono">
+          <span class="job__yrs">2022 — 2023</span>
+          <span class="job__tag">Medier</span>
+        </div>
+        <div>
+          <h3>Femernreport</h3>
+          <p class="job__title">Studentermedhjælper</p>
+          <p class="job__desc">Oversættelse af artikler i en journalistisk kontekst.</p>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- ══ UDDANNELSE ═════════════════════════════════════════ -->
+  <section class="sec wrap" id="uddannelse" aria-labelledby="h-udd">
+    <div class="sec__head rv">
+      <span class="sec__no mono">03</span>
+      <h2 id="h-udd">Uddannelse</h2>
+      <span class="rule" aria-hidden="true"></span>
+      <span class="aside mono">Syddansk Universitet</span>
+    </div>
+
+    <div class="edu">
+      <div class="edu__row rv">
+        <span class="job__yrs mono">2026 — 2028</span>
+        <div>
+          <h3>Cand.merc. i Accounting and Finance</h3>
+          <span class="edu__where">Syddansk Universitet, Odense</span>
+        </div>
+        <span class="chip chip--now">Nuværende</span>
+      </div>
+
+      <div class="edu__row rv">
+        <span class="job__yrs mono">2023 — 2026</span>
+        <div>
+          <h3>Bachelor i erhvervsøkonomi (HA)</h3>
+          <span class="edu__where">Syddansk Universitet, Odense</span>
+        </div>
+        <span class="chip">Afsluttet</span>
+      </div>
+
+      <div class="edu__row rv">
+        <span class="job__yrs mono">2019 — 2022</span>
+        <div>
+          <h3>Teknisk gymnasium (HTX)</h3>
+          <span class="edu__where">Lolland-Falster, kommunikation og it</span>
+        </div>
+        <span class="chip">Afsluttet</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ KOMPETENCER ════════════════════════════════════════ -->
+  <section class="sec wrap" id="kompetencer" aria-labelledby="h-kom">
+    <div class="sec__head rv">
+      <span class="sec__no mono">04</span>
+      <h2 id="h-kom">Kompetencer</h2>
+      <span class="rule" aria-hidden="true"></span>
+      <span class="aside mono">Fagligt og personligt</span>
+    </div>
+
+    <div class="skills">
+      <div class="rv">
+        <h3>Fagligt</h3>
+        <div class="skill" style="--lvl:96%"><span class="skill__n">Excel — modellering &amp; analyse</span><span class="skill__v">Ekspertniveau</span></div>
+        <div class="skill" style="--lvl:88%"><span class="skill__n">Forecasting &amp; budgetopfølgning</span><span class="skill__v">Dagligt</span></div>
+        <div class="skill" style="--lvl:86%"><span class="skill__n">Afvigelsesanalyse</span><span class="skill__v">Dagligt</span></div>
+        <div class="skill" style="--lvl:84%"><span class="skill__n">Finansiel rapportering</span><span class="skill__v">Kerneområde</span></div>
+        <div class="skill" style="--lvl:84%"><span class="skill__n">Bogføring &amp; afstemning</span><span class="skill__v">Kerneområde</span></div>
+        <div class="skill" style="--lvl:82%"><span class="skill__n">Datahåndtering &amp; kvalitetssikring</span><span class="skill__v">Kerneområde</span></div>
+        <div class="skill" style="--lvl:74%"><span class="skill__n">AI som arbejdsredskab</span><span class="skill__v">Integreret</span></div>
+        <div class="skill" style="--lvl:42%"><span class="skill__n">Python</span><span class="skill__v">I udvikling</span></div>
+      </div>
+
+      <div class="rv" style="--d:90ms">
+        <h3>Personligt</h3>
+        <div class="skill" style="--lvl:92%"><span class="skill__n">Analytisk problemløsning</span><span class="skill__v">Styrke</span></div>
+        <div class="skill" style="--lvl:88%"><span class="skill__n">Procesforbedring</span><span class="skill__v">Styrke</span></div>
+        <div class="skill" style="--lvl:88%"><span class="skill__n">Selvstændig arbejdsgang</span><span class="skill__v">Naturlig</span></div>
+        <div class="skill" style="--lvl:84%"><span class="skill__n">Samarbejde &amp; videndeling</span><span class="skill__v">Naturlig</span></div>
+        <div class="skill" style="--lvl:84%"><span class="skill__n">Hurtig vidensopbygning</span><span class="skill__v">Naturlig</span></div>
+        <div class="skill" style="--lvl:94%"><span class="skill__n">Dansk &amp; engelsk</span><span class="skill__v">Flydende</span></div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ══ FOOTER ═══════════════════════════════════════════════ -->
+<footer class="foot wrap" id="kontakt">
+  <div class="foot__grid">
+    <div class="rv">
+      <h2>Skriv til mig, hvis der er et tal der skal forklares.</h2>
+      <div class="foot__links">
+        <a class="btn btn--solid" href="mailto:Benjaminwesterholt@gmail.com">Send en mail</a>
+        <a class="btn" href="https://www.linkedin.com/in/bwesterholt" target="_blank" rel="noopener">LinkedIn</a>
+      </div>
+    </div>
+
+    <p class="foot__contact rv" style="--d:80ms">
+      <a href="mailto:Benjaminwesterholt@gmail.com">Benjaminwesterholt@gmail.com</a><br>
+      <a href="https://www.linkedin.com/in/bwesterholt" target="_blank" rel="noopener">linkedin.com/in/bwesterholt</a><br>
+      Odense, Danmark
+    </p>
+  </div>
+
+  <div class="colophon mono">
+    <span>© 2026 Benjamin Westerholt</span>
+    <span>Sidst opdateret juli 2026</span>
+    <span><a href="#top">Til toppen ↑</a></span>
+  </div>
+</footer>
+
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"Person",
+  "name":"Benjamin Westerholt",
+  "url":"https://westerholt.dk/",
+  "email":"mailto:Benjaminwesterholt@gmail.com",
+  "jobTitle":"Student Assistant, Financial Planning & Reporting",
+  "worksFor":[
+    {"@type":"Organization","name":"Shell Low Carbon Solutions Biogas"},
+    {"@type":"Organization","name":"Valoks"}
+  ],
+  "alumniOf":{"@type":"CollegeOrUniversity","name":"Syddansk Universitet"},
+  "address":{"@type":"PostalAddress","addressLocality":"Odense","addressCountry":"DK"},
+  "sameAs":["https://www.linkedin.com/in/bwesterholt"],
+  "knowsLanguage":["da","en"]
+}
+</script>
+
+<script>
+(function(){
+  'use strict';
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* Lokal tid i Odense — korrekt uanset hvor besøgende sidder */
+  var clock = document.getElementById('clock');
+  if(clock && window.Intl){
+    var fmt = new Intl.DateTimeFormat('da-DK',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'Europe/Copenhagen'});
+    var tick = function(){ clock.textContent = 'Kl. ' + fmt.format(new Date()) + ' lokalt'; };
+    tick(); setInterval(tick, 20000);
+  }
+
+  /* Læseindikator — CSS klarer det selv hvor scroll-timeline findes */
+  var prog = document.getElementById('progress');
+  var cssTimeline = CSS && CSS.supports && CSS.supports('animation-timeline','scroll()');
+  if(prog && !cssTimeline){
+    var raf = false;
+    var draw = function(){
+      var h = document.documentElement.scrollHeight - window.innerHeight;
+      prog.style.transform = 'scaleX(' + (h > 0 ? Math.min(window.scrollY / h, 1) : 0) + ')';
+      raf = false;
+    };
+    window.addEventListener('scroll', function(){
+      if(!raf){ raf = true; requestAnimationFrame(draw); }
+    }, {passive:true});
+    window.addEventListener('resize', draw, {passive:true});
+    draw();
+  }
+
+  /* Topbjælke efter hero */
+  var bar = document.getElementById('bar');
+  var hero = document.querySelector('.hero');
+  if(bar && hero && 'IntersectionObserver' in window){
+    new IntersectionObserver(function(e){
+      bar.classList.toggle('show', !e[0].isIntersecting);
+    }, {rootMargin:'-70% 0px 0px 0px'}).observe(hero);
+  }
+
+  /* Indtoning ved scroll — én gang per element */
+  var items = document.querySelectorAll('.rv');
+  if(reduce || !('IntersectionObserver' in window)){
+    items.forEach(function(el){ el.classList.add('in'); });
+  } else {
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); }
+      });
+    }, {rootMargin:'0px 0px -10% 0px', threshold:.08});
+    items.forEach(function(el){ io.observe(el); });
+  }
+
+  /* Kompetencelinjer tegner sig når de kommer i syne */
+  var skills = document.querySelectorAll('.skill');
+  if(reduce || !('IntersectionObserver' in window)){
+    skills.forEach(function(el){ el.classList.add('lit'); });
+  } else {
+    var io2 = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(!e.isIntersecting) return;
+        var sibs = Array.prototype.indexOf.call(e.target.parentNode.children, e.target);
+        e.target.style.setProperty('--sd', (sibs * 55) + 'ms');
+        e.target.classList.add('lit');
+        io2.unobserve(e.target);
+      });
+    }, {threshold:.5});
+    skills.forEach(function(el){ io2.observe(el); });
+  }
+
+  /* Kopiér e-mail */
+  var copy = document.getElementById('copy');
+  var label = document.getElementById('copyLabel');
+  if(copy && label){
+    var reset;
+    copy.addEventListener('click', function(){
+      var mail = copy.getAttribute('data-mail');
+      var done = function(){
+        label.textContent = 'Kopieret';
+        clearTimeout(reset);
+        reset = setTimeout(function(){ label.textContent = 'Kopiér e-mail'; }, 2200);
+      };
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(mail).then(done).catch(function(){ location.href = 'mailto:' + mail; });
+      } else {
+        location.href = 'mailto:' + mail;
+      }
+    });
+  }
+
+  /* Gem som PDF */
+  var pdf = document.getElementById('pdf');
+  if(pdf){ pdf.addEventListener('click', function(){ window.print(); }); }
+})();
+</script>
+
+</body>
+</html>
