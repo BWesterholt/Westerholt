@@ -25,8 +25,10 @@ SHEETS = {"Vinyl": "Vinyl", "CD": "CD"}
 LABELS = {
     "ARTIST": "Kunstner", "ALBUM": "Album", "MEDIA": "Format", "No": "Antal",
     "Year:": "År", "Month:": "Måned", "Date:": "Dag", "*": "Mærke", "I": "Mærke",
-    "J": "Kode", "Cover": "Cover", "NOTES": "Noter", "M": "Markering",
+    "J": "Version", "Cover": "Cover", "NOTES": "Noter", "M": "Markering",
 }
+COVERS = {"H": "Hardcase", "S": "Soft sleeve"}  # column K
+VERSIONS = {"O": "Original", "C": "Kopi", "B": "Bootleg", "?": "Ukendt"}  # column J
 SKIP = {"YY:"}  # two-digit year, shown as "År" instead
 
 
@@ -66,6 +68,7 @@ def main(path):
                 continue
             fields = []
             year = None
+            version = ""
             for i, v in enumerate(row):
                 v = clean(v)
                 h = clean(header[i]) if i < len(header) else None
@@ -77,6 +80,11 @@ def main(path):
                 label = LABELS.get(h) or LABELS.get(letter) or h or f"Kolonne {letter}"
                 if label == "Noter" and v.lower() == "mgl":
                     v = "Mangler"
+                if label == "Cover":
+                    v = COVERS.get(v.upper(), v)
+                if label == "Version":
+                    v = VERSIONS.get(v.upper(), v)
+                    version = v
                 if label == "År":
                     year = v
                 fields.append([label, v])
@@ -85,7 +93,7 @@ def main(path):
                 fields.insert(3, ["År", year])
             fields.append(["Række i Excel", f"{sheet}, række {n}"])
             records.append({"t": kind, "a": artist or "", "b": album or "", "m": clean(row[2]) or "",
-                            "y": year or "", "f": fields})
+                            "y": year or "", "v": version, "f": fields})
 
     data = {
         "version": find_version(wb, os.path.basename(path)),
