@@ -75,6 +75,8 @@ def main(path):
                     h = None
                 letter = openpyxl.utils.get_column_letter(i + 1)
                 label = LABELS.get(h) or LABELS.get(letter) or h or f"Kolonne {letter}"
+                if label == "Noter" and v.lower() == "mgl":
+                    v = "Mangler"
                 if label == "År":
                     year = v
                 fields.append([label, v])
