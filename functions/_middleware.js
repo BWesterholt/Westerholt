@@ -5,7 +5,8 @@
 // and re-run tools/opdater-samling.py with the new password (the collection is encrypted with it).
 import samling from "../data/samling.js";
 import appPage from "../lib/nils-app.js";
-import { findInfo, findCredits, findSongs, findPerson } from "../lib/nils-lookup.js";
+import { findInfo, findCredits } from "../lib/nils-lookup.js";
+import searchCode from "../lib/nils-search.js";
 
 const PASSWORD_SHA256 = "629ff2a8c079344a59c0a0f604cbf9ff9cf2bf6273638ec85a31171c7c784724";
 const COOKIE = "nils_adgang";
@@ -70,16 +71,22 @@ export async function onRequest(context) {
   if (path === "/medvirkende") {
     return json(await findCredits(context, url.searchParams.get("a") || "", url.searchParams.get("b") || "", url.searchParams.get("y") || "", url.searchParams.get("m") || ""));
   }
-  if (path === "/person") {
-    return json(await findPerson(context, url.searchParams.get("id") || "", () => readCollection(password)));
+  if (path === "/mb") {
+    // MusicBrainz, for browsers that can't ask it directly.
+    const p = url.searchParams.get("p") || "";
+    if (!/^(artist|recording|release|release-group)\/?[0-9a-f-]{0,36}\?/.test(p)) return json({ fejl: "ukendt" }, 400);
+    return passThrough(`https://musicbrainz.org/ws/2/${p}`, true);
   }
-  if (path === "/sang") {
-    return json(await findSongs(context, url.searchParams.get("q") || "", () => readCollection(password)));
+  if (path === "/ext") {
+    // Apple Music and Deezer song searches (they don't answer browsers on other sites).
+    const u = url.searchParams.get("u") || "";
+    if (!/^https:\/\/(itunes\.apple\.com\/search|api\.deezer\.com\/search)\?/.test(u)) return json({ fejl: "ukendt" }, 400);
+    return passThrough(u, false);
   }
   if (path !== "/") {
     return Response.redirect(new URL(base, url), 302);
   }
-  return page(appPage.replaceAll("__BASE__", prefix));
+  return page(appPage.replaceAll("__BASE__", prefix).replace("/*__SEARCH__*/", () => searchCode));
 }
 
 // The collection is gzipped JSON, encrypted with AES-GCM using a key made from the password.
@@ -90,11 +97,15 @@ async function decryptCollection(password) {
   return new Response(new Blob([plain]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
 }
 
-// The decrypted collection, kept while this server instance lives so searches don't decrypt it every time.
-let opened = null;
-async function readCollection(password) {
-  if (!opened || opened.password !== password) opened = { password, data: JSON.parse(await decryptCollection(password)) };
-  return opened.data;
+// Forwards a lookup unchanged, without reading it, so it costs this server next to nothing.
+async function passThrough(target, brainz) {
+  const headers = brainz ? { "User-Agent": "westerholt.dk-pladesamling/1.0 ( https://westerholt.dk )", Accept: "application/json" } : {};
+  const response = await fetch(target, { headers }).catch(() => null);
+  if (!response) return json({ fejl: "ingen forbindelse" }, 502);
+  return new Response(response.body, {
+    status: response.status,
+    headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "private, max-age=3600" },
+  });
 }
 
 function fromBase64(text) {
