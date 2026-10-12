@@ -71,6 +71,7 @@ export async function onRequest(context) {
   if (path === "/medvirkende") {
     return json(await findCredits(context, url.searchParams.get("a") || "", url.searchParams.get("b") || "", url.searchParams.get("y") || "", url.searchParams.get("m") || ""));
   }
+  // Song search and person pages run in the browser (lib/nils-search.js); these two only pass lookups on.
   if (path === "/mb") {
     // MusicBrainz, for browsers that can't ask it directly.
     const p = url.searchParams.get("p") || "";
