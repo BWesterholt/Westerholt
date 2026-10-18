@@ -19,11 +19,11 @@ import openpyxl
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 OUT = os.path.join(os.path.dirname(__file__), "..", "data", "samling.js")
-SHEETS = {"Vinyl": "Vinyl", "CD": "CD"}
+SHEETS = {"Vinyl": "Vinyl", "CD": "CD"}  # columns A-L line up on both sheets; D is the number of discs
 
 # Friendly labels for the Excel columns (by header text, or by column letter when the header is empty).
 LABELS = {
-    "ARTIST": "Kunstner", "ALBUM": "Album", "MEDIA": "Format", "No": "Antal",
+    "ARTIST": "Kunstner", "ALBUM": "Album", "MEDIA": "Format", "No": "Antal", "D": "Antal",
     "Year:": "År", "Month:": "Måned", "Date:": "Dag", "*": "Mærke", "I": "Mærke",
     "J": "Version", "Cover": "Cover", "NOTES": "Noter", "M": "Markering",
 }
@@ -64,8 +64,8 @@ def main(path):
         header = rows[0]
         for n, row in enumerate(rows[1:], start=2):
             artist, album = clean(row[0]), clean(row[1])
-            if not artist and not album:
-                continue
+            if not album and (not artist or re.fullmatch("Å+", artist)):
+                continue  # empty rows, and the ÅÅÅÅÅ end row that holds the sheet's total
             fields = []
             year = None
             version = ""
@@ -92,7 +92,9 @@ def main(path):
                 year = str(1900 + int(clean(row[4])))
                 fields.insert(3, ["År", year])
             fields.append(["Række i Excel", f"{sheet}, række {n}"])
+            count = clean(row[3]) if len(row) > 3 else None  # column D: number of discs
             records.append({"t": kind, "a": artist or "", "b": album or "", "m": clean(row[2]) or "",
+                            "n": int(count) if count and count.isdigit() else 0,
                             "y": year or "", "v": version, "f": fields})
 
     data = {
