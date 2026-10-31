@@ -2,7 +2,7 @@
   "name": "Pladesamlingen",
   "short_name": "Pladesamlingen",
   "start_url": "/",
-  "background_color": "#F6F1E9",
+  "background_color": "#C2532E",
   "theme_color": "#F6F1E9",
   "icons": [
     { "src": "/nils-ikon/ikon-192.png", "sizes": "192x192", "type": "image/png" },
