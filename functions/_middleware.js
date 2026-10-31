@@ -21,6 +21,11 @@ export async function onRequest(context) {
     return new Response("Ikke fundet", { status: 404 });
   }
 
+  // The home screen icons for the Nils page are plain files, shown without the password.
+  if (url.pathname.startsWith("/nils-ikon/")) {
+    return context.next();
+  }
+
   // The Nils page lives on nils.* hosts. On Cloudflare preview links (*.pages.dev)
   // it can also be reached at /nils, so it can be tried before it goes live.
   const isNilsHost = host.startsWith("nils.");
@@ -171,6 +176,10 @@ function shell(title, inner) {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>${title}</title>
+<link rel="apple-touch-icon" href="/nils-ikon/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/nils-ikon/ikon-192.png">
+<link rel="manifest" href="/nils-ikon/manifest.webmanifest">
+<meta name="apple-mobile-web-app-title" content="Pladesamlingen">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400..700&display=swap" rel="stylesheet">
