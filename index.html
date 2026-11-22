@@ -2,11 +2,11 @@
 <html lang="da">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Benjamin Westerholt – økonomi, data og finans</title>
-<meta name="description" content="Benjamin Westerholt læser cand.merc. i Accounting and Finance på Syddansk Universitet og arbejder med budget, forecast og rapportering hos Shell Biogas. Økonomiansvarlig i Valoks. Odense.">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Benjamin Westerholt</title>
+<meta name="description" content="Budget, forecast og rapportering hos Shell Biogas. Økonomiansvarlig i Valoks. Cand.merc. i Accounting and Finance på SDU. Odense.">
 <meta name="author" content="Benjamin Westerholt">
-<meta name="theme-color" content="#EAF1E4">
+<meta name="theme-color" content="#F5F1EA">
 <meta name="color-scheme" content="light">
 <link rel="canonical" href="https://westerholt.dk/">
 
@@ -14,306 +14,260 @@
 <meta property="og:url" content="https://westerholt.dk/">
 <meta property="og:locale" content="da_DK">
 <meta property="og:title" content="Benjamin Westerholt">
-<meta property="og:description" content="Cand.merc.-studerende i Accounting and Finance. Financial Planning &amp; Reporting hos Shell Biogas og økonomiansvarlig i Valoks.">
+<meta property="og:description" content="Budget, forecast og rapportering hos Shell Biogas. Økonomiansvarlig i Valoks. Cand.merc. på SDU.">
 <meta property="og:image" content="https://westerholt.dk/billeder/deling.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Benjamin Westerholt, med et overblik over arbejde og uddannelse">
+<meta property="og:image:alt" content="Benjamin Westerholt, med en tidslinje over arbejde og uddannelse">
 <meta name="twitter:card" content="summary_large_image">
 
 <link rel="icon" href="/billeder/ikon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/billeder/apple-touch-icon.png">
 
-
-<link rel="preload" href="/fonts/source-serif-4-latin.woff2" as="font" type="font/woff2" crossorigin>
 <style>
-/* Skrifterne ligger på siden selv (SIL OFL), så intet sendes til Google */
-@font-face{font-family:"Source Serif 4";font-style:normal;font-weight:400 700;font-display:swap;src:url("/fonts/source-serif-4-latin-ext.woff2") format("woff2");unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
-@font-face{font-family:"Source Serif 4";font-style:normal;font-weight:400 700;font-display:swap;src:url("/fonts/source-serif-4-latin.woff2") format("woff2");unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
-@font-face{font-family:"Sofia Sans Condensed";font-style:normal;font-weight:400 800;font-display:swap;src:url("/fonts/sofia-sans-condensed-latin-ext.woff2") format("woff2");unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
-@font-face{font-family:"Sofia Sans Condensed";font-style:normal;font-weight:400 800;font-display:swap;src:url("/fonts/sofia-sans-condensed-latin.woff2") format("woff2");unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
-/*
-  westerholt.dk: siden er ét ark fra en hovedbog.
-  Linjeret grønt regnskabspapir, trykte kolonneoverskrifter, poster skrevet
-  med blåsort blæk, røde margenlinjer, og det der er i gang nu, fremhævet
-  med overstregningstusch, som en revisor markerer åbne poster.
-*/
+/* Samme designsprog som pladesamlingen: Apples systemskrift, varm baggrund,
+   hvide kort, gennemsigtig menulinje og bløde bevægelser. */
 :root{
-  --paper:#EAF1E4;
-  --paper-deep:#DFEADB;
-  --rule:#C3D8C0;
-  --rule-strong:#9EC09C;
-  --print:#2D6A4D;
-  --red:#C8473C;
-  --ink:#1B2A47;
-  --ink-soft:#44546F;
-  --past:#808CA0;
-  --marker:#F6E25E;
-  --white:#FBFDF9;
-
-  --serif:"Source Serif 4","Iowan Old Style",Georgia,serif;
-  --cond:"Sofia Sans Condensed","Arial Narrow",sans-serif;
-
-  --side:clamp(1rem,4.5vw,3.5rem);
-  --max:74rem;
-  --label:14.5rem;
-  --line:2.125rem;
-  --axis:2.5rem;
+  --bg:#F5F1EA;--card:#FFFFFF;--ink:#1D1D1F;--text:#3A3A3C;--muted:#6E6E73;
+  --sep:rgba(60,60,67,.14);--grid:rgba(60,60,67,.07);--fill:rgba(118,118,128,.12);--fill2:rgba(118,118,128,.2);
+  --hover:rgba(60,40,20,.045);
+  --accent:#C2532E;--accent-hi:#A8441F;--accent-ink:#B34A27;--accent-soft:#F8E6DC;
+  --blue:#2F6F93;--blue-soft:#E2EEF5;
+  --past:#86868B;
+  --bar:rgba(245,241,234,.72);
+  --shadow:0 1px 2px rgba(40,25,10,.06),0 8px 28px rgba(40,25,10,.08);
+  --shadow-lg:0 2px 6px rgba(40,25,10,.08),0 24px 60px rgba(40,25,10,.14);
+  --ease:cubic-bezier(.22,1,.36,1);
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI Variable Text","Segoe UI",Roboto,"Helvetica Neue",Helvetica,Arial,sans-serif;
+  --font-display:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI Variable Display","Segoe UI",Roboto,"Helvetica Neue",Helvetica,Arial,sans-serif;
+  --max:61.25rem;
+  --side:max(22px,env(safe-area-inset-left));
 }
-
-*,*::before,*::after{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%;text-size-adjust:100%;scrollbar-color:var(--rule-strong) var(--paper)}
+html{color-scheme:light;-webkit-text-size-adjust:100%;text-size-adjust:100%;scrollbar-color:rgba(60,60,67,.3) transparent}
 @media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
-body{
-  margin:0;background:var(--paper);color:var(--ink);
-  font-family:var(--serif);font-size:1.125rem;line-height:1.6;
-  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
-}
-h1,h2,h3{margin:0;font-weight:600;text-wrap:balance}
-p,ul,figure,dl,dd{margin:0}
+*,*::before,*::after{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:1.0625rem;line-height:1.47;letter-spacing:-.01em;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+h1,h2,h3,p,ul,dl,dd,figure{margin:0}
 ul{padding:0;list-style:none}
-a{color:inherit;text-decoration-thickness:1px;text-underline-offset:.2em;text-decoration-color:color-mix(in srgb,currentColor 45%,transparent)}
-a:hover{text-decoration-color:currentColor}
-::selection{background:var(--marker);color:var(--ink)}
+h1,h2,h3{color:var(--ink);font-family:var(--font-display);text-wrap:balance}
+a{color:var(--accent-ink);text-decoration:none}
+a:hover{text-decoration:underline;text-underline-offset:.18em}
+button{font:inherit;color:inherit;letter-spacing:inherit}
+::selection{background:var(--accent-soft);color:var(--ink)}
 :focus{outline:none}
-:focus-visible{outline:2px solid var(--red);outline-offset:3px;border-radius:2px}
-.skip{position:absolute;left:-999px;top:.75rem;z-index:10;background:var(--ink);color:var(--white);padding:.5rem .9rem;font-family:var(--cond)}
-.skip:focus-visible{left:.75rem}
+:focus-visible{outline:none;box-shadow:0 0 0 4px rgba(194,83,46,.35);border-radius:10px}
+.wrap{max-width:calc(var(--max) + 2 * var(--side));margin-inline:auto;padding-inline:var(--side)}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
-.wrap{max-width:var(--max);margin-inline:auto;padding-inline:var(--side)}
-.tnum{font-variant-numeric:tabular-nums lining-nums}
+.skip{position:absolute;left:-999px;top:10px;z-index:50;background:var(--ink);color:#fff;border-radius:999px;padding:8px 16px;font-size:15px;font-weight:600}
+.skip:focus-visible{left:12px}
+.tnum{font-variant-numeric:tabular-nums}
 
-/* Trykt skrift: kolonneoverskrifter, menu, knapper */
-.printed{font-family:var(--cond);font-weight:600;color:var(--print);letter-spacing:.01em}
+/* Knapper: piller, der giver efter, når man trykker */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 22px;border:0;border-radius:999px;font-size:1.0625rem;font-weight:600;letter-spacing:-.01em;text-decoration:none;cursor:pointer;transition:transform .1s ease-out,background-color .2s}
+.btn:hover{text-decoration:none}
+.btn:active{transform:scale(.97)}
+.btn--primary{background:var(--accent);color:#fff}
+.btn--primary:hover{background:var(--accent-hi)}
+.btn--plain{background:var(--fill);color:var(--ink)}
+.btn--plain:hover{background:var(--fill2)}
+.btn svg{width:18px;height:18px;flex:none}
 
-/* Overstregningstusch: det der er i gang nu */
-.marked{
-  background:linear-gradient(100deg,transparent .2em,color-mix(in srgb,var(--marker) 88%,transparent) .35em,color-mix(in srgb,var(--marker) 75%,transparent) calc(100% - .4em),transparent calc(100% - .2em));
-  background-size:100% 72%;background-position:0 62%;background-repeat:no-repeat;
-  padding-inline:.25em;margin-inline:-.25em;
-  -webkit-box-decoration-break:clone;box-decoration-break:clone;
-}
+/* Menulinjen: gennemsigtigt materiale, som siden ruller under */
+.nav{position:sticky;top:0;z-index:10;background:var(--bar);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%)}
+.nav::after{content:"";position:absolute;left:0;right:0;top:100%;height:14px;pointer-events:none;background:linear-gradient(rgba(245,241,234,.75),rgba(245,241,234,0));opacity:0;transition:opacity .25s}
+.nav.scrolled::after{opacity:1}
+.nav__in{display:flex;align-items:center;justify-content:space-between;gap:16px;height:52px}
+.nav__name{font-size:1.0625rem;font-weight:600;color:var(--ink);letter-spacing:-.015em;opacity:0;transform:translateY(4px);transition:opacity .3s var(--ease),transform .3s var(--ease)}
+.nav.scrolled .nav__name{opacity:1;transform:none}
+.nav__name:hover{text-decoration:none}
+.nav ul{display:flex;gap:4px}
+.nav ul a{display:block;padding:6px 12px;border-radius:999px;font-size:.875rem;font-weight:500;color:var(--text);letter-spacing:0}
+.nav ul a:hover{background:var(--fill);text-decoration:none}
+@media (max-width:640px){.nav li:not(.nav__cta){display:none}.nav .nav__cta a{background:var(--fill);color:var(--ink);font-weight:600}}
 
-/* Knapper i papirets eget sprog: trykt tekst i en ramme som et felt på blanketten */
-.btn{
-  display:inline-flex;align-items:center;gap:.55rem;min-height:2.875rem;padding:.55rem 1.15rem;
-  font-family:var(--cond);font-size:1.0625rem;font-weight:600;letter-spacing:.01em;
-  color:var(--print);background:var(--white);
-  border:1.5px solid var(--print);border-radius:2px;
-  text-decoration:none;cursor:pointer;
-  transition:background-color .15s,color .15s;
-}
-.btn:hover{background:var(--print);color:var(--white)}
-.btn svg{width:1.05rem;height:1.05rem;flex:none}
-.btn--ink{background:var(--ink);border-color:var(--ink);color:var(--white)}
-.btn--ink:hover{background:#0F1A30;border-color:#0F1A30}
+/* Toppen */
+.hero{text-align:center;padding:clamp(28px,6vw,64px) 0 clamp(36px,6vw,56px)}
+.avatar{width:96px;height:96px;margin:0 auto 22px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(180deg,#A6AAB6,#858994);color:#fff;font-family:var(--font-display);font-size:38px;font-weight:600;letter-spacing:-.01em;box-shadow:var(--shadow)}
+.hero h1{font-size:clamp(2.75rem,1.5rem + 5.2vw,5rem);font-weight:700;line-height:1.04;letter-spacing:-.03em}
+.hero__lead{max-width:42rem;text-wrap:balance;margin:16px auto 0;font-family:var(--font-display);font-size:clamp(1.25rem,1rem + 1.1vw,1.75rem);font-weight:600;line-height:1.24;letter-spacing:-.018em;color:var(--muted)}
+.hero__lead b{color:var(--ink);font-weight:600}
+.hero .actions{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:28px}
 
-/* ── Arkets hoved ────────────────────────────────────────── */
-.head{border-bottom:3px double var(--print)}
-.head__in{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;padding-block:1rem .7rem}
-.head__acct{font-size:1.0625rem}
-.head__acct b{font-weight:600;color:var(--ink)}
-.head nav ul{display:flex;gap:1.6rem;font-size:1.0625rem}
-.head nav a{text-decoration:none;color:var(--print)}
-.head nav a:hover{color:var(--ink);text-decoration:underline}
-@media (max-width:720px){.head nav li:not(:last-child){display:none}}
+/* Kort */
+.card{background:var(--card);border-radius:22px;box-shadow:var(--shadow)}
 
-/* ── Top ─────────────────────────────────────────────────── */
-.top{padding-block:clamp(2rem,5vh,3.5rem) 0}
-.name{
-  font-size:clamp(2.75rem,1.6rem + 4.6vw,5.25rem);
-  font-weight:600;line-height:1;letter-spacing:-.022em;
-}
-.lede{margin-top:1.1rem;max-width:40em;font-size:clamp(1.125rem,1rem + .45vw,1.3125rem);line-height:1.5;color:var(--ink)}
-.actions{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.5rem}
+/* Tidslinjen */
+.tl-card{--pad:24px;--label:12.5rem;padding:20px var(--pad) 16px;overflow:hidden;position:relative}
+.tl-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 20px;margin-bottom:14px}
+.tl-head h2{font-size:1.375rem;font-weight:700;letter-spacing:-.02em}
 
-/* ── Hovedbogen: tidslinjen ──────────────────────────────── */
-.ledger{margin-top:clamp(2rem,5vh,3rem);background:var(--white);border:1px solid var(--rule-strong);position:relative;box-shadow:0 1px 0 var(--rule-strong),0 10px 24px -18px rgba(27,42,71,.35)}
-.ledger__title{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:.25rem 1.5rem;padding:.75rem 1rem .6rem;border-bottom:2px solid var(--print)}
-.ledger__title h2{font-family:var(--cond);font-size:1.25rem;color:var(--print);font-weight:700;letter-spacing:.01em}
-.ledger__title p{font-family:var(--cond);font-size:1rem;color:var(--print)}
+.seg{position:relative;display:inline-flex;background:var(--fill);border-radius:9px;padding:2px;isolation:isolate}
+.seg .thumb{position:absolute;z-index:-1;top:2px;bottom:2px;left:0;border-radius:7px;background:#fff;box-shadow:0 3px 8px rgba(0,0,0,.12),0 3px 1px rgba(0,0,0,.04);transition:transform .35s var(--ease),width .35s var(--ease)}
+.seg button{position:relative;border:0;background:none;padding:5px 16px;border-radius:7px;cursor:pointer;font-size:.875rem;font-weight:500;color:var(--ink);letter-spacing:0;transition:opacity .15s}
+.seg button:active{opacity:.6}
+.seg button[aria-pressed="true"]{font-weight:600}
 
-.tl{position:relative;--t:.79;overflow:hidden}
-.tl__axis,.tl__row,.tl__group{display:grid;grid-template-columns:var(--label) minmax(0,1fr)}
-.tl__axis{height:var(--axis);align-items:center;border-bottom:1px solid var(--rule-strong)}
-.tl__axis > span:first-child{padding:.35rem 1rem;font-family:var(--cond);font-weight:600;color:var(--print)}
-.tl__years{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));font-family:var(--cond);font-weight:600;color:var(--print);font-size:.9375rem}
-.tl__years span{padding:.35rem 0 .35rem .45rem;border-left:1px solid var(--rule)}
+.tl{position:relative;--t:.79}
+.tl__axis,.tl__row,.tl__group{display:grid;grid-template-columns:var(--label) minmax(0,1fr);align-items:center}
+.tl__axis{height:28px}
+.tl__years{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));font-size:.8125rem;font-weight:600;color:var(--muted);letter-spacing:0}
+.tl__years span{padding-left:6px}
+.tl__years b{font-weight:inherit}
+.tl__group{height:30px;padding-top:6px}
+.tl__group span{padding-left:8px;font-size:.8125rem;font-weight:600;color:var(--muted);letter-spacing:0}
+.tl__row{min-height:34px;border-radius:9px;color:var(--ink);text-decoration:none}
+.tl__row:hover{background:var(--hover);text-decoration:none}
+.tl__label{padding:4px 12px 4px 8px;font-size:.9375rem;line-height:1.25;letter-spacing:-.005em}
+.tl__row.is-now .tl__label{font-weight:600}
+.tl__track{position:relative;align-self:stretch;min-height:34px}
+.tl__lines{position:absolute;top:0;bottom:0;right:0;left:var(--label);pointer-events:none;background-image:linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:10% 100%}
+.tl__bar,.tl__plan{position:absolute;top:calc(50% - 5px);height:10px;border-radius:5px;transform-origin:left center}
+.tl__bar{left:calc(var(--s) * 100%);width:calc((var(--e) - var(--s)) * 100%);min-width:10px;background:var(--past)}
+.tl__row.is-now .tl__bar{background:var(--accent);border-radius:5px 0 0 5px}
+.tl__row.is-edu.is-now .tl__bar{background:var(--blue)}
+.tl__plan{left:calc(var(--p) * 100%);width:calc((var(--q) - var(--p)) * 100%);background:color-mix(in srgb,var(--accent) 34%,#fff);border-radius:0 5px 5px 0}
+.tl__row.is-edu .tl__plan{background:color-mix(in srgb,var(--blue) 34%,#fff)}
+/* Åbne job fortsætter helt ud over kortets kant */
+.tl__plan.is-open{width:auto;right:calc(-1 * var(--pad) - 2px);border-radius:0}
+.tl__today{position:absolute;top:28px;bottom:0;width:0;left:calc(var(--label) + (100% - var(--label)) * var(--t));border-left:1.5px solid var(--ink);opacity:.75;pointer-events:none}
+.tl__today span{position:absolute;top:7px;left:0;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:999px;padding:1px 8px;font-size:.6875rem;font-weight:600;letter-spacing:.01em;white-space:nowrap}
 
-.tl__group > span{padding:.45rem 1rem .4rem;font-family:var(--cond);font-weight:700;color:var(--print);font-size:.9375rem}
-.tl__group,.tl__row{border-bottom:1px solid var(--rule)}
+.tl-legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:12px;padding:10px 8px 0;border-top:1px solid var(--sep);font-size:.8125rem;color:var(--muted);letter-spacing:0}
+.tl-legend span{display:inline-flex;align-items:center;gap:7px}
+.tl-legend i{width:10px;height:10px;border-radius:50%;background:var(--accent)}
+.tl-legend .l-plan i{background:color-mix(in srgb,var(--accent) 34%,#fff)}
+.tl-legend .l-edu i{background:var(--blue)}
+.tl-legend .l-past i{background:var(--past)}
+.tl-legend .l-today i{width:2px;height:14px;border-radius:1px;background:var(--ink)}
 
-.tl__row{min-height:var(--line);text-decoration:none;color:var(--ink)}
-.tl__row:hover .tl__label span:first-child{text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:.2em}
-.tl__label{display:flex;align-items:center;padding:.25rem 1rem;font-size:1rem;line-height:1.25}
-
-/* Søjlernes spor med lodrette årslinjer */
-.tl__track,.tl__group::after{
-  position:relative;
-  background-image:linear-gradient(90deg,var(--rule) 1px,transparent 1px);
-  background-size:10% 100%;
-}
-.tl__group::after{content:""}
-
-/* Dobbelt rød margenlinje mellem tekst og tal, som på et rigtigt hovedbogsark */
-.tl__label,.tl__axis > span:first-child,.tl__group > span{border-right:3px double var(--red)}
-
-.tl__bar{
-  position:absolute;top:calc(50% - .375rem);height:.75rem;
-  left:calc(var(--s) * 100%);width:calc((var(--e) - var(--s)) * 100%);
-  background:var(--past);border-radius:1px;
-  transform-origin:left center;
-}
-.tl__row.is-now .tl__bar{background:var(--ink)}
-/* Planlagt og fortsætter: skraveret fra i dag og ud over kanten */
-.tl__plan{
-  position:absolute;top:calc(50% - .375rem);height:.75rem;
-  left:calc(var(--p) * 100%);width:calc((var(--q) - var(--p)) * 100%);
-  background:repeating-linear-gradient(-45deg,var(--ink) 0 1.5px,transparent 1.5px 5px);
-  box-shadow:inset 0 0 0 1.5px var(--ink);
-  transform-origin:left center;
-}
-.tl__plan.is-open{
-  box-shadow:inset 0 1.5px 0 var(--ink),inset 0 -1.5px 0 var(--ink);
-}
-
-/* I dag: en rød linje */
-.tl__today{position:absolute;top:0;bottom:0;pointer-events:none;left:calc(var(--label) + (100% - var(--label)) * var(--t));border-left:2px solid var(--red)}
-.tl__today span{position:absolute;top:calc(var(--axis) + .45rem);left:.4rem;font-family:var(--cond);font-weight:700;font-size:.875rem;color:var(--red);white-space:nowrap}
-
-.ledger__foot{display:flex;flex-wrap:wrap;gap:.35rem 1.4rem;padding:.6rem 1rem .7rem;font-family:var(--cond);font-size:.9375rem;color:var(--print)}
-.ledger__foot span{display:inline-flex;align-items:center;gap:.45rem}
-.ledger__foot i{display:inline-block;width:1.4rem;height:.6rem;background:var(--ink)}
-.ledger__foot .k-past i{background:var(--past)}
-.ledger__foot .k-plan i{background:repeating-linear-gradient(-45deg,var(--ink) 0 1.5px,transparent 1.5px 4px);box-shadow:inset 0 0 0 1px var(--ink)}
-.ledger__foot .k-today i{width:2px;height:.95rem;background:var(--red)}
+.tl__row[hidden],.tl__group[hidden]{display:none}
 
 @media (prefers-reduced-motion:no-preference){
-  .tl__bar,.tl__plan{animation:write .65s cubic-bezier(.22,.8,.2,1) both;animation-delay:calc(var(--delay,0) * 1ms + 250ms)}
-  .tl__today{animation:fade .4s ease-out 1.3s both}
-  @keyframes write{from{transform:scaleX(0)}to{transform:scaleX(1)}}
-  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .tl__bar,.tl__plan{animation:grow .7s var(--ease) both;animation-delay:calc(var(--delay,0) * 1ms + 150ms)}
+  @keyframes grow{from{transform:scaleX(0);opacity:0}to{transform:scaleX(1);opacity:1}}
 }
+::view-transition-group(*){animation-duration:.35s;animation-timing-function:cubic-bezier(.22,1,.36,1)}
 
-@media (max-width:760px){
-  :root{--label:0px}
+@media (max-width:700px){
+  .tl-card{--pad:16px;--label:0px;padding-top:16px}
+  .tl-head{margin-bottom:10px}
+  .seg{width:100%}
+  .seg button{flex:1;padding-inline:8px}
   .tl__axis,.tl__row,.tl__group{grid-template-columns:minmax(0,1fr)}
-  .tl__axis > span:first-child,.tl__group::after{display:none}
+  .tl__axis > span:first-child,.tl__group > i{display:none}
   .tl__years{font-size:.6875rem}
-  .tl__years span{padding-left:.15rem}
-  .tl__label,.tl__group > span{border-right:0}
-  .tl__row{grid-template-rows:auto 1.4rem;background-image:linear-gradient(90deg,var(--rule) 1px,transparent 1px);background-size:10% 100%}
-  .tl__track{background:none}
-  .tl__label{padding:.45rem .6rem 0}
-  .tl__group > span{padding-inline:.6rem}
-  .tl__bar,.tl__plan{height:.55rem;top:calc(50% - .275rem)}
-  .ledger__title,.ledger__foot{padding-inline:.6rem}
+  .tl__years span{padding-left:3px}
+  .tl__years b{display:none}
+  .tl__row{grid-template-rows:auto 18px;padding:5px 0 3px;border-radius:0}
+  .tl__label{padding:0}
+  .tl__group span{padding-left:0}
+  .tl__track{min-height:18px}
+  .tl__bar,.tl__plan{height:8px;top:calc(50% - 4px)}
 }
 
-/* ── Sektioner ───────────────────────────────────────────── */
-.sec{padding-top:clamp(3.5rem,8vw,5.5rem)}
-.sec__h{display:flex;align-items:baseline;gap:1rem;margin-bottom:1.25rem}
-.sec__h h2{font-size:clamp(1.75rem,1.3rem + 1.4vw,2.5rem);letter-spacing:-.015em;line-height:1.1}
+/* Afsnit */
+.sec{padding-top:clamp(64px,10vw,104px)}
+.sec > h2{font-size:clamp(2rem,1.4rem + 2.4vw,3rem);font-weight:700;line-height:1.08;letter-spacing:-.028em;margin-bottom:22px}
 
-.about{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(1.5rem,5vw,4.5rem);align-items:start}
-@media (max-width:860px){.about{grid-template-columns:1fr}}
-.about__big{font-size:clamp(1.4rem,1.1rem + 1.1vw,2rem);line-height:1.3;letter-spacing:-.01em;font-weight:500}
-.about__text > * + *{margin-top:1em}
-.about__text{color:var(--ink-soft)}
-.facts{display:grid;grid-template-columns:auto 1fr;gap:0 1.25rem;margin-top:1.5rem;border-top:1px solid var(--rule-strong)}
-.facts dt,.facts dd{padding:.45rem 0;border-bottom:1px solid var(--rule)}
-.facts dt{font-family:var(--cond);font-weight:600;color:var(--print)}
-.facts dd{color:var(--ink)}
+.statement{max-width:44rem;font-family:var(--font-display);font-size:clamp(1.5rem,1.1rem + 1.8vw,2.5rem);font-weight:600;line-height:1.14;letter-spacing:-.024em;color:var(--ink)}
+.statement span{color:var(--muted)}
+.facts{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--fill);color:var(--text);border-radius:999px;padding:5px 12px;font-size:.875rem;font-weight:600;letter-spacing:0}
 
-/* Journal: erfaring og uddannelse som poster på arket */
-.journal{background:var(--white);border:1px solid var(--rule-strong)}
-.journal__head,.post{display:grid;grid-template-columns:10rem minmax(0,1fr) 7rem}
-.journal__head{border-bottom:2px solid var(--print)}
-.journal__head span{padding:.5rem 1rem;font-family:var(--cond);font-weight:600;color:var(--print)}
-.journal__head span:last-child,.post__status{text-align:right}
-.journal__head span:first-child,.post__when{border-right:3px double var(--red)}
-.post{border-bottom:1px solid var(--rule);scroll-margin-top:1rem}
-.post:last-child{border-bottom:0}
-.post > *{padding:1.1rem 1rem}
-.post__when{font-size:1rem;color:var(--ink-soft)}
-.post h3{font-size:1.375rem;line-height:1.25;letter-spacing:-.01em}
-.post__role{font-family:var(--cond);font-weight:600;font-size:1.0625rem;color:var(--print);margin-top:.15rem}
-.post__text{margin-top:.5rem;color:var(--ink);max-width:62ch}
-.post__note{margin-top:.5rem;font-size:1rem;color:var(--ink-soft);max-width:62ch}
-.post__status{font-family:var(--cond);font-weight:600;font-size:1.0625rem;color:var(--ink-soft)}
-.post.is-now .post__status{color:var(--ink)}
-.post:target{background:color-mix(in srgb,var(--marker) 26%,var(--white))}
-.edu .post h3{font-size:1.1875rem}
-.edu .post > *{padding-block:.85rem}
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-areas:"ai ai excel" "eco eco tools";gap:16px;margin-top:32px}
+.tile{padding:26px 26px 28px;border-radius:22px;background:var(--card);box-shadow:var(--shadow)}
+.tile svg{width:28px;height:28px;color:var(--accent);margin-bottom:14px}
+.tile h3{font-size:1.3125rem;font-weight:700;letter-spacing:-.02em;line-height:1.2}
+.tile p{margin-top:6px;color:var(--text);font-size:1.0625rem}
+.tile .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.tile--ai{grid-area:ai;background:var(--ink);color:#fff;box-shadow:var(--shadow-lg);padding-block:30px 34px}
+.tile--ai h3{color:#fff;font-size:clamp(1.5rem,1.2rem + 1.2vw,2rem);letter-spacing:-.025em}
+.tile--ai p{color:rgba(255,255,255,.78);font-size:clamp(1.0625rem,1rem + .4vw,1.25rem);max-width:28rem;margin-top:10px}
+.tile--ai svg{color:#F0A57F}
+.tile--excel{grid-area:excel}
+.tile--eco{grid-area:eco}
+.tile--tools{grid-area:tools}
 @media (max-width:760px){
-  .journal__head{display:none}
-  .post{grid-template-columns:1fr auto;grid-template-areas:"when status" "body body"}
-  .post__when{grid-area:when;border-right:0;padding-bottom:0}
-  .post__status{grid-area:status;padding-bottom:0}
-  .post__body{grid-area:body;padding-top:.25rem}
-  .post > *{padding-inline:.85rem}
+  .tiles{grid-template-columns:1fr;grid-template-areas:"ai" "excel" "eco" "tools";gap:12px}
 }
 
-/* Kompetencer på linjeret papir */
-.skills{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 clamp(1.5rem,4vw,3rem)}
-@media (max-width:860px){.skills{grid-template-columns:1fr}}
-.skills h3{font-family:var(--cond);font-size:1.125rem;font-weight:700;color:var(--print);padding-bottom:.35rem;border-bottom:2px solid var(--print);margin-top:1rem}
-.skills li{padding:.45rem 0;border-bottom:1px solid var(--rule-strong);line-height:1.35}
-.skills small{display:block;color:var(--ink-soft);font-size:.9375rem}
-
-/* ── Kontakt: bundlinjen under en dobbelt streg ─────────── */
-.total{margin-top:clamp(4rem,9vw,6.5rem);padding-top:clamp(2rem,4vw,3rem);border-top:4px double var(--ink)}
-.total h2{font-size:clamp(1.75rem,1.3rem + 1.4vw,2.5rem);letter-spacing:-.015em}
-.total p{margin-top:.6rem;color:var(--ink-soft);max-width:36em}
-.mail{
-  display:inline-block;margin-top:1.25rem;
-  font-size:clamp(1.4rem,.9rem + 2.6vw,2.75rem);font-weight:600;letter-spacing:-.02em;line-height:1.15;
-  text-decoration:underline;text-decoration-style:double;text-decoration-thickness:2px;text-underline-offset:.2em;text-decoration-color:var(--ink);
-  overflow-wrap:anywhere;
+/* Lister i iOS-stil */
+.list{background:var(--card);border-radius:18px;box-shadow:var(--shadow);overflow:hidden}
+.item{position:relative;display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:2px 14px;align-items:start;padding:16px 20px;scroll-margin-top:72px}
+.item + .item::before{content:"";position:absolute;top:0;right:0;left:78px;height:1px;background:var(--sep)}
+.item:target{background:var(--accent-soft)}
+.mono{grid-row:span 2;width:44px;height:44px;border-radius:11px;display:grid;place-items:center;background:linear-gradient(180deg,#A6AAB6,#858994);color:#fff;font-family:var(--font-display);font-size:1.1875rem;font-weight:600;letter-spacing:0}
+.item.is-now .mono{background:linear-gradient(180deg,#D4693F,#B9492A)}
+.edu .item.is-now .mono{background:linear-gradient(180deg,#3F86AE,#2A6386)}
+.item h3{font-size:1.0625rem;font-weight:600;letter-spacing:-.015em;line-height:1.3;font-family:var(--font)}
+.item__role{font-size:.9375rem;color:var(--muted);line-height:1.35;letter-spacing:-.005em}
+.item__text{grid-column:2 / -1;margin-top:4px;font-size:.9375rem;color:var(--text);letter-spacing:-.005em}
+.item__when{grid-column:3;grid-row:1;display:flex;align-items:center;gap:8px;font-size:.9375rem;color:var(--muted);white-space:nowrap;padding-top:1px;letter-spacing:-.005em}
+.pill{display:inline-flex;align-items:center;gap:6px;background:var(--accent-soft);color:var(--accent-ink);border-radius:999px;padding:2px 9px;font-weight:600;font-size:.8125rem;letter-spacing:0}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.edu .pill{background:var(--blue-soft);color:var(--blue)}
+@media (max-width:640px){
+  .item{grid-template-columns:40px minmax(0,1fr);padding:14px 16px;gap:2px 12px}
+  .item + .item::before{left:68px}
+  .mono{width:40px;height:40px;border-radius:10px;font-size:1.0625rem;grid-row:span 3}
+  .item__when{grid-column:2;grid-row:auto;font-size:.875rem;padding-top:2px}
+  .item__text{grid-column:2}
 }
-.total .actions{margin-top:1.4rem}
-.foot{margin-top:clamp(3rem,6vw,4.5rem);padding-bottom:2rem;}
-.foot__in{display:flex;flex-wrap:wrap;justify-content:space-between;gap:.5rem 2rem;padding-top:1rem;border-top:1px solid var(--rule-strong);font-family:var(--cond);font-size:.9375rem;color:var(--print)}
-.copied{background:var(--print);color:var(--white)}
 
-/* ── Print: et rent CV på A4 ─────────────────────────────── */
+/* Kontakt */
+.contact{text-align:center;padding:clamp(72px,11vw,120px) 0 clamp(56px,8vw,88px)}
+.contact h2{font-size:clamp(2.25rem,1.5rem + 3vw,3.5rem);font-weight:700;line-height:1.06;letter-spacing:-.03em}
+.contact p{margin-top:10px;font-size:clamp(1.125rem,1rem + .5vw,1.3125rem);color:var(--muted);letter-spacing:-.012em}
+.mail{display:inline-block;margin-top:22px;font-family:var(--font-display);font-size:clamp(1.375rem,.9rem + 2.4vw,2.25rem);font-weight:600;letter-spacing:-.022em;overflow-wrap:anywhere;color:var(--accent-ink)}
+.contact .actions{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:24px}
+
+.foot{border-top:1px solid var(--sep)}
+.foot__in{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 24px;padding-block:18px calc(28px + env(safe-area-inset-bottom));font-size:.8125rem;color:var(--muted);letter-spacing:0}
+
+.toast{position:fixed;left:50%;bottom:calc(28px + env(safe-area-inset-bottom));transform:translate(-50%,16px);background:rgba(29,29,31,.92);color:#fff;padding:10px 18px;border-radius:999px;font-size:.9375rem;font-weight:600;opacity:0;pointer-events:none;transition:opacity .25s,transform .4s var(--ease);z-index:40;white-space:nowrap;-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+@media (prefers-reduced-motion:reduce){
+  .nav__name,.seg .thumb,.toast{transition:opacity .2s}
+  .btn:active{transform:none}
+}
+@media (prefers-reduced-transparency:reduce){.nav{background:var(--bg);-webkit-backdrop-filter:none;backdrop-filter:none}.toast{background:#1D1D1F}}
+@media (prefers-contrast:more){:root{--sep:rgba(60,60,67,.45);--muted:#4A4A4F;--grid:rgba(60,60,67,.18)}.nav{background:var(--bg)}.card,.list,.tile{box-shadow:0 0 0 1px rgba(60,60,67,.45)}}
+
+/* Print: et rent CV på to A4-sider */
 @media print{
-  @page{size:A4;margin:11mm 12mm 12mm}
-  html{font-size:8.6pt}
-  :root{--label:15.5rem;--side:0;--line:1.9rem;--axis:2.2rem}
+  @page{size:A4;margin:12mm 13mm}
+  html{font-size:8.8pt}
   html,body{background:#fff}
-  body{font-size:1rem;line-height:1.4;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .wrap{max-width:none}
-  .head nav,.actions,.skip,.head{display:none !important}
-  .top{padding-top:0}
-  .name{font-size:2.9rem}
-  .lede{font-size:1.15rem;margin-top:.6rem;max-width:none}
-  .ledger{margin-top:1.2rem;box-shadow:none;break-inside:avoid}
-  .tl__bar,.tl__plan,.tl__today{animation:none !important}
-  .sec{padding-top:1.6rem}
-  .sec__h{margin-bottom:.6rem;break-after:avoid}
-  .sec__h h2{font-size:1.6rem}
-  .about__big{font-size:1.25rem}
-  .about__text{font-size:1rem}
-  .facts{display:none}
-  .journal__head{break-after:avoid}
-  .post{break-inside:avoid}
-  .post > *{padding:.55rem .8rem}
-  .post h3{font-size:1.2rem}
-  .post__text,.post__note{font-size:1rem;margin-top:.25rem;max-width:none}
-  .post__note{display:none}
-  .edu .post > *{padding-block:.45rem}
-  .edu .post h3{font-size:1.1rem}
-  .post:target{background:none}
-  .skills{grid-template-columns:repeat(3,1fr)}
-  .skills h3{margin-top:0;font-size:1.05rem}
-  .skills li{padding:.2rem 0}
-  .skills small{display:inline;margin-left:.3em}
-  .total{margin-top:1.6rem;padding-top:.8rem;break-inside:avoid}
-  .total h2{font-size:1.6rem}
-  .total p{display:none}
-  .mail{font-size:1.3rem;margin-top:.2rem}
-  .foot{margin-top:1rem;padding-bottom:0}
+  body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .wrap{max-width:none;padding-inline:0}
+  .nav,.skip,.seg,.actions,.toast,.avatar,.contact p{display:none !important}
+  .card,.list,.tile{box-shadow:none;border:1px solid rgba(60,60,67,.18)}
+  .hero{text-align:left;padding:0 0 4mm}
+  .hero h1{font-size:2.8rem}
+  .hero__lead{margin:2mm 0 0;max-width:none;font-size:1.3rem}
+  .tl-card{padding:3mm 4mm;break-inside:avoid}
+  .tl__bar,.tl__plan{animation:none !important}
+  .tl__plan.is-open{right:-4mm}
+  .tl__row[hidden]{display:grid !important}
+  .tl__group[hidden]{display:grid !important}
+  .sec{padding-top:6mm}
+  .sec > h2{font-size:1.7rem;margin-bottom:3mm;break-after:avoid}
+  .statement{font-size:1.35rem;max-width:none}
+  .facts{margin-top:2mm}
+  .tiles{grid-template-columns:repeat(3,1fr);grid-template-areas:"ai ai excel" "eco eco tools";gap:3mm;margin-top:4mm}
+  .tile{padding:4mm 5mm;break-inside:avoid}
+  .tile svg{display:none}
+  .tile--ai{background:#fff;color:var(--ink)}
+  .tile--ai h3{color:var(--ink);font-size:1.3rem}
+  .tile--ai p{color:var(--text);font-size:1rem}
+  .item{padding:2.4mm 4mm;break-inside:avoid}
+  .item:target{background:none}
+  .contact{text-align:left;padding:6mm 0 0;break-inside:avoid}
+  .contact h2{font-size:1.7rem}
+  .mail{margin-top:1mm;font-size:1.3rem}
+  .foot{margin-top:5mm}
   a{text-decoration:none}
 }
 </style>
@@ -321,250 +275,230 @@ a:hover{text-decoration-color:currentColor}
 <body>
 <a class="skip" href="#indhold">Spring til indholdet</a>
 
-<header class="head">
-  <div class="head__in wrap">
-    <p class="head__acct"><b>Benjamin Westerholt</b></p>
+<header class="nav" id="nav">
+  <div class="nav__in wrap">
+    <a class="nav__name" href="#indhold">Benjamin Westerholt</a>
     <nav aria-label="Hovedmenu">
-      <ul class="printed">
-        <li><a href="#overblik">Overblik</a></li>
+      <ul>
+        <li><a href="#tidslinje">Tidslinje</a></li>
         <li><a href="#om">Om mig</a></li>
         <li><a href="#erfaring">Erfaring</a></li>
-        <li><a href="#kontakt">Kontakt</a></li>
+        <li class="nav__cta"><a href="#kontakt">Kontakt</a></li>
       </ul>
     </nav>
   </div>
 </header>
 
 <main id="indhold">
-  <section class="top wrap" aria-labelledby="navn">
-    <h1 class="name" id="navn">Benjamin Westerholt</h1>
-    <p class="lede">Jeg læser cand.merc. i Accounting and Finance på Syddansk Universitet og arbejder med budget, forecast og rapportering hos <span class="marked">Shell Biogas</span> i Odense. Ved siden af står jeg for økonomien i softwarevirksomheden <span class="marked">Valoks</span>.</p>
+  <section class="hero wrap" aria-labelledby="navn">
+    <div class="avatar" aria-hidden="true">BW</div>
+    <h1 id="navn">Benjamin Westerholt</h1>
+    <p class="hero__lead"><b>Budget, forecast og rapportering</b> hos Shell Biogas. <b>Hele økonomien</b> i Valoks. Cand.merc. på SDU.</p>
     <div class="actions">
-      <a class="btn btn--ink" href="mailto:benjaminwesterholt@gmail.com">
-        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="2.5" y="4.5" width="15" height="11" rx="1"/><path d="m3 5.5 7 5.5 7-5.5"/></svg>
-        Skriv til mig
-      </a>
-      <a class="btn" href="https://www.linkedin.com/in/bwesterholt" rel="noopener">LinkedIn</a>
-      <button class="btn" type="button" id="print">Gem CV som PDF</button>
+      <a class="btn btn--primary" href="mailto:benjaminwesterholt@gmail.com">Skriv til mig</a>
+      <a class="btn btn--plain" href="https://www.linkedin.com/in/bwesterholt" rel="noopener">LinkedIn</a>
+      <button class="btn btn--plain" type="button" id="print">Gem CV som PDF</button>
     </div>
+  </section>
 
-    <figure class="ledger" id="overblik" aria-labelledby="overblik-titel">
-      <div class="ledger__title">
-        <h2 id="overblik-titel">Overblik</h2>
-        <p>Arbejde og uddannelse, 2019–2028</p>
+  <div class="wrap">
+    <figure class="card tl-card" id="tidslinje" aria-labelledby="tl-titel">
+      <div class="tl-head">
+        <h2 id="tl-titel">Tidslinje</h2>
+        <div class="seg" id="seg" role="group" aria-label="Vis">
+          <span class="thumb" aria-hidden="true"></span>
+          <button type="button" data-show="alle" aria-pressed="true">Alle</button>
+          <button type="button" data-show="work" aria-pressed="false">Arbejde</button>
+          <button type="button" data-show="edu" aria-pressed="false">Uddannelse</button>
+        </div>
       </div>
+
       <div class="tl" id="tl">
+        <div class="tl__lines" aria-hidden="true"></div>
         <div class="tl__axis" aria-hidden="true">
-          <span>Post</span>
-          <div class="tl__years tnum"><span>2019</span><span>2020</span><span>2021</span><span>2022</span><span>2023</span><span>2024</span><span>2025</span><span>2026</span><span>2027</span><span>2028</span></div>
+          <span></span>
+          <div class="tl__years tnum"><span><b>20</b>19</span><span><b>20</b>20</span><span><b>20</b>21</span><span><b>20</b>22</span><span><b>20</b>23</span><span><b>20</b>24</span><span><b>20</b>25</span><span><b>20</b>26</span><span><b>20</b>27</span><span><b>20</b>28</span></div>
         </div>
 
-        <div class="tl__group" aria-hidden="true"><span>Arbejde</span></div>
-        <a class="tl__row is-now" href="#shell">
-          <span class="tl__label"><span class="marked">Shell Biogas</span><span class="sr">, siden juli 2026, i gang</span></span>
+        <div class="tl__group" data-kind="work" aria-hidden="true"><span>Arbejde</span><i></i></div>
+        <a class="tl__row is-now" data-kind="work" href="#shell">
+          <span class="tl__label">Shell Biogas<span class="sr">, siden juli 2026, i gang</span></span>
           <span class="tl__track" aria-hidden="true"><span class="tl__bar" data-start="2026-07" data-end="nu"></span><span class="tl__plan is-open"></span></span>
         </a>
-        <a class="tl__row is-now" href="#valoks">
-          <span class="tl__label"><span class="marked">Valoks</span><span class="sr">, siden 2024, i gang</span></span>
-          <span class="tl__track" aria-hidden="true"><span class="tl__bar" data-start="2024-07" data-end="nu"></span><span class="tl__plan is-open"></span></span>
+        <a class="tl__row is-now" data-kind="work" href="#valoks">
+          <span class="tl__label">Valoks<span class="sr">, siden december 2024, i gang</span></span>
+          <span class="tl__track" aria-hidden="true"><span class="tl__bar" data-start="2024-12" data-end="nu"></span><span class="tl__plan is-open"></span></span>
         </a>
-        <a class="tl__row" href="#styrelsen">
-          <span class="tl__label"><span>Social- og Boligstyrelsen</span><span class="sr">, 2025 til 2026</span></span>
-          <span class="tl__track" aria-hidden="true"><span class="tl__bar" data-start="2025-07" data-end="2026-06"></span></span>
+        <a class="tl__row" data-kind="work" href="#styrelsen">
+          <span class="tl__label">Social- og Boligstyrelsen<span class="sr">, februar 2025 til juni 2026</span></span>
+          <span class="tl__track" aria-hidden="true"><span class="tl__bar" data-start="2025-02" data-end="2026-06"></span></span>
         </a>
-        <a class="tl__row" href="#elgiganten">
-          <span class="tl__label"><span>Elgiganten</span><span class="sr">, 2023 til 2024</span></span>
-          <span class="tl__track" aria-hidden="true"><span class="tl__bar" data-start="2023-07" data-end="2024-06"></span></span>
+        <a class="tl__row" data-kind="work" href="#elgiganten">
+          <span class="tl__label">Elgiganten<span class="sr">, juli 2023 til juli 2024</span></span>
+          <span class="tl__track" aria-hidden="true"><span class="tl__bar" data-start="2023-07" data-end="2024-07"></span></span>
         </a>
-        <a class="tl__row" href="#femernreport">
-          <span class="tl__label"><span>Femernreport</span><span class="sr">, 2022 til 2023</span></span>
+        <a class="tl__row" data-kind="work" href="#femernreport">
+          <span class="tl__label">Femernreport<span class="sr">, 2022 til 2023</span></span>
           <span class="tl__track" aria-hidden="true"><span class="tl__bar" data-start="2022-07" data-end="2023-06"></span></span>
         </a>
+        <a class="tl__row" data-kind="work" href="#lalandia">
+          <span class="tl__label">Lalandia<span class="sr">, juli 2019 til august 2023</span></span>
+          <span class="tl__track" aria-hidden="true"><span class="tl__bar" data-start="2019-07" data-end="2023-08"></span></span>
+        </a>
 
-        <div class="tl__group" aria-hidden="true"><span>Uddannelse</span></div>
-        <a class="tl__row is-now" href="#candmerc">
-          <span class="tl__label"><span class="marked">Cand.merc., SDU</span><span class="sr">, 2026 til 2028, i gang</span></span>
+        <div class="tl__group" data-kind="edu" aria-hidden="true"><span>Uddannelse</span><i></i></div>
+        <a class="tl__row is-now is-edu" data-kind="edu" href="#candmerc">
+          <span class="tl__label">Cand.merc., SDU<span class="sr">, 2026 til 2028, i gang</span></span>
           <span class="tl__track" aria-hidden="true"><span class="tl__bar" data-start="2026-09" data-end="nu"></span><span class="tl__plan" data-until="2028-06"></span></span>
         </a>
-        <a class="tl__row" href="#ha">
-          <span class="tl__label"><span>HA, SDU</span><span class="sr">, 2023 til 2026</span></span>
+        <a class="tl__row is-edu" data-kind="edu" href="#ha">
+          <span class="tl__label">HA, SDU<span class="sr">, 2023 til 2026</span></span>
           <span class="tl__track" aria-hidden="true"><span class="tl__bar" data-start="2023-09" data-end="2026-06"></span></span>
         </a>
-        <a class="tl__row" href="#htx">
-          <span class="tl__label"><span>HTX</span><span class="sr">, 2019 til 2022</span></span>
+        <a class="tl__row is-edu" data-kind="edu" href="#htx">
+          <span class="tl__label">HTX<span class="sr">, 2019 til 2022</span></span>
           <span class="tl__track" aria-hidden="true"><span class="tl__bar" data-start="2019-08" data-end="2022-06"></span></span>
         </a>
 
         <div class="tl__today" aria-hidden="true"><span>I dag</span></div>
       </div>
-      <figcaption class="ledger__foot">
-        <span><i></i>I gang</span>
-        <span class="k-plan"><i></i>Fortsætter</span>
-        <span class="k-past"><i></i>Afsluttet</span>
-        <span class="k-today"><i></i>I dag</span>
+
+      <figcaption class="tl-legend">
+        <span><i></i>Arbejde, i gang</span>
+        <span class="l-edu"><i></i>Uddannelse, i gang</span>
+        <span class="l-plan"><i></i>Fortsætter</span>
+        <span class="l-past"><i></i>Afsluttet</span>
+        <span class="l-today"><i></i>I dag</span>
       </figcaption>
     </figure>
-  </section>
+  </div>
 
   <section class="sec wrap" id="om" aria-labelledby="h-om">
-    <div class="sec__h"><h2 id="h-om">Om mig</h2></div>
-    <div class="about">
-      <p class="about__big">Begge mine roller handler om det samme: store datasæt, avanceret Excel og en lav tolerance for tal, der ikke stemmer.</p>
-      <div class="about__text">
-        <p>Modellering, analyse og kvalitetssikring er det, jeg er stærkest i. Jeg bruger AI som et fast værktøj i arbejdet og er i gang med at lære Python.</p>
-        <p>Målet er en karriere inden for økonomi og finans, hvor forståelse for data og skarp analyse gør en reel forskel.</p>
-        <dl class="facts">
-          <dt>Bor i</dt><dd>Odense</dd>
-          <dt>Sprog</dt><dd>Dansk og engelsk, flydende</dd>
-          <dt>Værktøjer</dt><dd>Excel, Power Query og AI. Python er på vej.</dd>
-        </dl>
-      </div>
+    <h2 id="h-om">Om mig</h2>
+    <p class="statement">Jeg kan lide tal, der stemmer, <span>og arbejdsgange, der kører af sig selv.</span></p>
+    <div class="facts">
+      <span class="chip">Bor i Odense</span>
+      <span class="chip">Dansk og engelsk, flydende</span>
+    </div>
+
+    <div class="tiles">
+      <article class="tile tile--ai">
+        <svg viewBox="0 0 28 28" fill="currentColor" aria-hidden="true"><path d="M12 3.5c.4 0 .7.3.8.7.9 4.6 2.9 6.6 7.5 7.5.4.1.7.4.7.8s-.3.7-.7.8c-4.6.9-6.6 2.9-7.5 7.5-.1.4-.4.7-.8.7s-.7-.3-.8-.7c-.9-4.6-2.9-6.6-7.5-7.5-.4-.1-.7-.4-.7-.8s.3-.7.7-.8c4.6-.9 6.6-2.9 7.5-7.5.1-.4.4-.7.8-.7Z"/><path d="M21.5 17.5c.2 0 .4.1.4.3.4 2 1.3 2.9 3.3 3.3.2 0 .3.2.3.4s-.1.4-.3.4c-2 .4-2.9 1.3-3.3 3.3 0 .2-.2.3-.4.3s-.4-.1-.4-.3c-.4-2-1.3-2.9-3.3-3.3-.2 0-.3-.2-.3-.4s.1-.4.3-.4c2-.4 2.9-1.3 3.3-3.3 0-.2.2-.3.4-.3Z" opacity=".7"/></svg>
+        <h3>AI i arbejdet</h3>
+        <p>Jeg bruger AI til at automatisere og effektivisere arbejdsprocesser. Så bliver der mere tid til analysen.</p>
+      </article>
+      <article class="tile tile--excel">
+        <svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3.5" y="4.5" width="21" height="19" rx="3.5"/><path d="M3.5 11h21M3.5 17h21M11 4.5v19"/></svg>
+        <h3>Excel</h3>
+        <p>Modeller, analyser og afstemning på ekspertniveau.</p>
+      </article>
+      <article class="tile tile--eco">
+        <svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M5 23.5h18M8 19v-5M14 19V8M20 19v-8"/></svg>
+        <h3>Økonomi</h3>
+        <div class="chips">
+          <span class="chip">Forecast og budget</span>
+          <span class="chip">Afvigelsesanalyse</span>
+          <span class="chip">Rapportering</span>
+          <span class="chip">Bogføring og afstemning</span>
+        </div>
+      </article>
+      <article class="tile tile--tools">
+        <svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m10 9-5 5 5 5M18 9l5 5-5 5"/></svg>
+        <h3>Værktøjer</h3>
+        <p>Power Query i hverdagen. Python på grundniveau.</p>
+      </article>
     </div>
   </section>
 
   <section class="sec wrap" id="erfaring" aria-labelledby="h-erf">
-    <div class="sec__h"><h2 id="h-erf">Erfaring</h2></div>
-    <div class="journal">
-      <div class="journal__head" aria-hidden="true"><span>Periode</span><span>Virksomhed og rolle</span><span>Status</span></div>
-
-      <article class="post is-now" id="shell">
-        <p class="post__when tnum">Juli 2026 –</p>
-        <div class="post__body">
-          <h3>Shell Low Carbon Solutions Biogas</h3>
-          <p class="post__role">Student assistant, Financial Planning &amp; Reporting</p>
-          <p class="post__text">Del af finansteamet på hovedkontoret i Odense. Jeg forbedrer processerne for forecast og rapportering, laver afvigelsesanalyser mellem forecast, budget og faktiske tal og vedligeholder de finansielle modeller og analyseværktøjer. Jeg udarbejder også beslutningsgrundlag til ledelsen og laver ad hoc-analyser af tendenser og forretningsspørgsmål.</p>
-          <p class="post__note">Shell Biogas, tidligere Nature Energy, er markedsleder i Europa i at udvikle, bygge og drive industrielle biogasanlæg. 14 anlæg og omkring 500 medarbejdere.</p>
-        </div>
-        <p class="post__status"><span class="marked">I gang</span></p>
-      </article>
-
-      <article class="post is-now" id="valoks">
-        <p class="post__when tnum">2024 –</p>
-        <div class="post__body">
-          <h3>Valoks</h3>
-          <p class="post__role">Bogholder og økonomiansvarlig</p>
-          <p class="post__text">Eneste økonomiansvarlige i en dansk softwarevirksomhed i vækst. Jeg har bygget økonomifunktionen op fra bunden og står alene for den daglige bogføring, afstemning og kvalitetssikring af store datamængder fra tusindvis af transaktioner hver måned.</p>
-        </div>
-        <p class="post__status"><span class="marked">I gang</span></p>
-      </article>
-
-      <article class="post" id="styrelsen">
-        <p class="post__when tnum">2025–2026</p>
-        <div class="post__body">
-          <h3>Social- og Boligstyrelsen</h3>
-          <p class="post__role">Studentermedhjælper i tilskudsøkonomi</p>
-          <p class="post__text">Kontrollerede og godkendte selvstændigt tilskudsregnskaber og revisionsmateriale fra NGO’er. Udarbejdede statistik og var med til at kvalitetssikre interne procedurer.</p>
-        </div>
-        <p class="post__status">Afsluttet</p>
-      </article>
-
-      <article class="post" id="elgiganten">
-        <p class="post__when tnum">2023–2024</p>
-        <div class="post__body">
-          <h3>Elgiganten</h3>
-          <p class="post__role">Sales advisor</p>
-          <p class="post__text">Teknisk rådgivning og salg med fokus på kundeoplevelse og produktviden.</p>
-        </div>
-        <p class="post__status">Afsluttet</p>
-      </article>
-
-      <article class="post" id="femernreport">
-        <p class="post__when tnum">2022–2023</p>
-        <div class="post__body">
-          <h3>Femernreport</h3>
-          <p class="post__role">Studentermedhjælper</p>
-          <p class="post__text">Oversættelse af artikler i en journalistisk sammenhæng.</p>
-        </div>
-        <p class="post__status">Afsluttet</p>
-      </article>
-    </div>
+    <h2 id="h-erf">Erfaring</h2>
+    <ul class="list">
+      <li class="item is-now" id="shell">
+        <span class="mono" aria-hidden="true">S</span>
+        <h3>Shell Biogas</h3>
+        <p class="item__role">Student Assistant, Financial Planning &amp; Reporting</p>
+        <p class="item__when tnum"><span class="pill">Nu</span>Jul. 2026 – nu</p>
+        <p class="item__text">Budget, forecast og rapportering i finansteamet i Odense.</p>
+      </li>
+      <li class="item is-now" id="valoks">
+        <span class="mono" aria-hidden="true">V</span>
+        <h3>Valoks</h3>
+        <p class="item__role">Økonomiansvarlig</p>
+        <p class="item__when tnum"><span class="pill">Nu</span>Dec. 2024 – nu</p>
+        <p class="item__text">Eneste økonomiansvarlige i en softwarevirksomhed i vækst. Jeg har bygget økonomien op fra bunden.</p>
+      </li>
+      <li class="item" id="styrelsen">
+        <span class="mono" aria-hidden="true">S</span>
+        <h3>Social- og Boligstyrelsen</h3>
+        <p class="item__role">Studentermedhjælper i tilskudsøkonomi</p>
+        <p class="item__when tnum">Feb. 2025 – jun. 2026</p>
+        <p class="item__text">Kontrollerede tilskudsregnskaber fra NGO’er.</p>
+      </li>
+      <li class="item" id="elgiganten">
+        <span class="mono" aria-hidden="true">E</span>
+        <h3>Elgiganten</h3>
+        <p class="item__role">Sales Advisor, deltid</p>
+        <p class="item__when tnum">Jul. 2023 – jul. 2024</p>
+      </li>
+      <li class="item" id="femernreport">
+        <span class="mono" aria-hidden="true">F</span>
+        <h3>Femernreport</h3>
+        <p class="item__role">Studentermedhjælper</p>
+        <p class="item__when tnum">2022 – 2023</p>
+        <p class="item__text">Oversatte artikler.</p>
+      </li>
+      <li class="item" id="lalandia">
+        <span class="mono" aria-hidden="true">L</span>
+        <h3>Lalandia</h3>
+        <p class="item__role">Supplier, deltid</p>
+        <p class="item__when tnum">Jul. 2019 – aug. 2023</p>
+      </li>
+    </ul>
   </section>
 
   <section class="sec wrap" id="uddannelse" aria-labelledby="h-udd">
-    <div class="sec__h"><h2 id="h-udd">Uddannelse</h2></div>
-    <div class="journal edu">
-      <div class="journal__head" aria-hidden="true"><span>Periode</span><span>Uddannelse og sted</span><span>Status</span></div>
-      <div class="post is-now" id="candmerc">
-        <p class="post__when tnum">2026–2028</p>
-        <div class="post__body">
-          <h3>Cand.merc. i Accounting and Finance</h3>
-          <p class="post__role">Syddansk Universitet, Odense</p>
-        </div>
-        <p class="post__status"><span class="marked">I gang</span></p>
-      </div>
-      <div class="post" id="ha">
-        <p class="post__when tnum">2023–2026</p>
-        <div class="post__body">
-          <h3>Bachelor i erhvervsøkonomi (HA)</h3>
-          <p class="post__role">Syddansk Universitet, Odense</p>
-        </div>
-        <p class="post__status">Afsluttet</p>
-      </div>
-      <div class="post" id="htx">
-        <p class="post__when tnum">2019–2022</p>
-        <div class="post__body">
-          <h3>Teknisk gymnasium (HTX)</h3>
-          <p class="post__role">Lolland-Falster, kommunikation og it</p>
-        </div>
-        <p class="post__status">Afsluttet</p>
-      </div>
-    </div>
+    <h2 id="h-udd">Uddannelse</h2>
+    <ul class="list edu">
+      <li class="item is-now" id="candmerc">
+        <span class="mono" aria-hidden="true">C</span>
+        <h3>Cand.merc. i Accounting and Finance</h3>
+        <p class="item__role">Syddansk Universitet</p>
+        <p class="item__when tnum"><span class="pill">Nu</span>2026 – 2028</p>
+      </li>
+      <li class="item" id="ha">
+        <span class="mono" aria-hidden="true">H</span>
+        <h3>Bachelor i erhvervsøkonomi (HA)</h3>
+        <p class="item__role">Syddansk Universitet</p>
+        <p class="item__when tnum">2023 – 2026</p>
+      </li>
+      <li class="item" id="htx">
+        <span class="mono" aria-hidden="true">H</span>
+        <h3>Teknisk gymnasium (HTX)</h3>
+        <p class="item__role">Lolland-Falster, kommunikation og it</p>
+        <p class="item__when tnum">2019 – 2022</p>
+      </li>
+    </ul>
   </section>
 
-  <section class="sec wrap" id="kompetencer" aria-labelledby="h-kom">
-    <div class="sec__h"><h2 id="h-kom">Kompetencer</h2></div>
-    <div class="skills">
-      <div>
-        <h3>Økonomi</h3>
-        <ul>
-          <li>Forecast og budgetopfølgning</li>
-          <li>Afvigelsesanalyse</li>
-          <li>Finansiel rapportering</li>
-          <li>Bogføring og afstemning</li>
-        </ul>
-      </div>
-      <div>
-        <h3>Data og værktøjer</h3>
-        <ul>
-          <li>Excel på ekspertniveau <small>modellering og analyse</small></li>
-          <li>Power Query</li>
-          <li>Datahåndtering og kvalitetssikring</li>
-          <li>AI som fast arbejdsværktøj</li>
-          <li>Python <small>lærer det nu</small></li>
-        </ul>
-      </div>
-      <div>
-        <h3>Personligt</h3>
-        <ul>
-          <li>Analytisk problemløsning</li>
-          <li>Procesforbedring</li>
-          <li>Arbejder selvstændigt</li>
-          <li>Samarbejde og videndeling</li>
-          <li>Lærer hurtigt nyt</li>
-        </ul>
-      </div>
-    </div>
-  </section>
-
-  <section class="wrap" id="kontakt" aria-labelledby="h-kon">
-    <div class="total">
-      <h2 id="h-kon">Kontakt</h2>
-      <p>Skriv gerne, hvis du har en stilling, et projekt eller et spørgsmål.</p>
-      <a class="mail" href="mailto:benjaminwesterholt@gmail.com">benjaminwesterholt<wbr>@gmail.com</a>
-      <div class="actions">
-        <button class="btn btn--ink" type="button" id="copy" data-mail="benjaminwesterholt@gmail.com">Kopiér mailadressen</button>
-        <a class="btn" href="https://www.linkedin.com/in/bwesterholt" rel="noopener">LinkedIn</a>
-      </div>
+  <section class="contact wrap" id="kontakt" aria-labelledby="h-kon">
+    <h2 id="h-kon">Lad os tage en snak.</h2>
+    <p>Om en stilling, et projekt eller bare et spørgsmål.</p>
+    <a class="mail" href="mailto:benjaminwesterholt@gmail.com">benjaminwesterholt<wbr>@gmail.com</a>
+    <div class="actions">
+      <button class="btn btn--plain" type="button" id="copy" data-mail="benjaminwesterholt@gmail.com">Kopiér mailadressen</button>
+      <a class="btn btn--plain" href="https://www.linkedin.com/in/bwesterholt" rel="noopener">LinkedIn</a>
     </div>
   </section>
 </main>
 
-<footer class="foot wrap">
-  <div class="foot__in">
+<footer class="foot">
+  <div class="foot__in wrap">
     <span>Benjamin Westerholt, Odense</span>
     <span>Opdateret november 2026</span>
   </div>
 </footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script type="application/ld+json">
 {
@@ -588,10 +522,13 @@ a:hover{text-decoration-color:currentColor}
 <script>
 (function(){
   "use strict";
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
   /* Tidslinjen går fra januar 2019 til december 2028 */
   var FIRST = 2019, YEARS = 10;
   var now = new Date();
   var pos = function(y, m){ return (y - FIRST + m / 12) / YEARS; };
+  var end = function(v){ var p = v.split("-"); return pos(+p[0], +p[1]); };
   var clamp = function(x){ return Math.min(Math.max(x, 0), 1); };
   var t = clamp(pos(now.getFullYear(), now.getMonth() + 0.5));
 
@@ -604,35 +541,73 @@ a:hover{text-decoration-color:currentColor}
       var a = bar.getAttribute("data-start").split("-");
       var b = bar.getAttribute("data-end");
       var s = pos(+a[0], +a[1] - 1);
-      var e = b === "nu" ? t : (function(p){ return pos(+p[0], +p[1]); })(b.split("-"));
+      var e = Math.max(b === "nu" ? t : end(b), s);
       bar.style.setProperty("--s", s);
-      bar.style.setProperty("--e", Math.max(e, s));
-      bar.style.setProperty("--delay", Math.round(s * 900));
+      bar.style.setProperty("--e", e);
+      bar.style.setProperty("--delay", Math.round(s * 700));
       if(plan){
-        /* I gang: skraveret fra i dag. Åbne job løber ud over kanten, uddannelsen stopper ved sin slutdato. */
+        /* I gang: fortsætter fra i dag. Job løber ud over kanten, uddannelsen stopper ved sin slutdato. */
         var u = plan.getAttribute("data-until");
-        var q = u ? (function(p){ return pos(+p[0], +p[1]); })(u.split("-")) : 1;
-        plan.style.setProperty("--p", Math.max(e, s));
-        plan.style.setProperty("--q", Math.max(q, e));
-        plan.style.setProperty("--delay", Math.round(t * 900) + 120);
+        plan.style.setProperty("--p", e);
+        plan.style.setProperty("--q", u ? Math.max(end(u), e) : 1);
+        plan.style.setProperty("--delay", Math.round(t * 700) + 250);
       }
     });
   }
 
+  /* Segmenteret kontrol: vis alle, arbejde eller uddannelse */
+  var seg = document.getElementById("seg");
+  if(seg && tl){
+    var thumb = seg.querySelector(".thumb");
+    var buttons = seg.querySelectorAll("button");
+    var place = function(btn){
+      thumb.style.width = btn.offsetWidth + "px";
+      thumb.style.transform = "translateX(" + (btn.offsetLeft - 2) + "px)";
+    };
+    var show = function(kind){
+      tl.querySelectorAll("[data-kind]").forEach(function(el){
+        el.hidden = !(kind === "alle" || el.getAttribute("data-kind") === kind);
+      });
+    };
+    buttons.forEach(function(btn){
+      btn.addEventListener("click", function(){
+        buttons.forEach(function(b){ b.setAttribute("aria-pressed", b === btn ? "true" : "false"); });
+        place(btn);
+        var kind = btn.getAttribute("data-show");
+        if(document.startViewTransition && !reduce){ document.startViewTransition(function(){ show(kind); }); }
+        else show(kind);
+      });
+    });
+    var current = function(){ return seg.querySelector('[aria-pressed="true"]'); };
+    var settle = function(){ thumb.style.transition = "none"; place(current()); thumb.offsetWidth; thumb.style.transition = ""; };
+    settle();
+    window.addEventListener("resize", settle);
+    if(document.fonts && document.fonts.ready) document.fonts.ready.then(settle);
+  }
+
+  /* Menulinjen viser navnet og en blød kant, når man har rullet forbi toppen */
+  var nav = document.getElementById("nav");
+  var h1 = document.getElementById("navn");
+  if(nav && h1 && "IntersectionObserver" in window){
+    new IntersectionObserver(function(entries){
+      nav.classList.toggle("scrolled", !entries[0].isIntersecting);
+    }, { rootMargin: "-52px 0px 0px 0px" }).observe(h1);
+  }
+
   /* Kopiér mailadressen */
+  var toast = document.getElementById("toast"), hideToast;
+  var say = function(msg){
+    toast.textContent = msg;
+    toast.classList.add("show");
+    clearTimeout(hideToast);
+    hideToast = setTimeout(function(){ toast.classList.remove("show"); }, 2000);
+  };
   var copy = document.getElementById("copy");
   if(copy){
-    var reset;
     copy.addEventListener("click", function(){
       var mail = copy.getAttribute("data-mail");
-      var done = function(){
-        copy.textContent = "Kopieret";
-        copy.classList.add("copied");
-        clearTimeout(reset);
-        reset = setTimeout(function(){ copy.textContent = "Kopiér mailadressen"; copy.classList.remove("copied"); }, 2200);
-      };
       if(navigator.clipboard && navigator.clipboard.writeText){
-        navigator.clipboard.writeText(mail).then(done, function(){ location.href = "mailto:" + mail; });
+        navigator.clipboard.writeText(mail).then(function(){ say("Mailadressen er kopieret"); }, function(){ location.href = "mailto:" + mail; });
       } else {
         location.href = "mailto:" + mail;
       }
