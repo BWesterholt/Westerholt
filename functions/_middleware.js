@@ -7,6 +7,7 @@ import samling from "../data/samling.js";
 import appPage from "../lib/nils-app.js";
 import { findInfo, findCredits } from "../lib/nils-lookup.js";
 import searchCode from "../lib/nils-search.js";
+import { handleWishlist, searchAlbums } from "../lib/nils-onsker.js";
 
 const PASSWORD_SHA256 = "629ff2a8c079344a59c0a0f604cbf9ff9cf2bf6273638ec85a31171c7c784724";
 const COOKIE = "nils_adgang";
@@ -37,7 +38,8 @@ export async function onRequest(context) {
   const prefix = isNilsHost ? "" : "/nils";
   const path = url.pathname.slice(prefix.length) || "/";
 
-  if (request.method === "POST") {
+  // A POST to the page itself is the login form; the wishlist sends its changes elsewhere.
+  if (request.method === "POST" && path === "/") {
     const form = await request.formData();
     const password = String(form.get("kode") || "");
     if (await isCorrect(password)) {
@@ -69,6 +71,14 @@ export async function onRequest(context) {
     return new Response(await decryptCollection(password), {
       headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "private, no-cache", "X-Robots-Tag": "noindex" },
     });
+  }
+  // The shared wishlist and the album search used to add to it. The list is kept in Cloudflare KV:
+  // a namespace "onskeliste" bound to this Pages project as ONSKELISTE (Production and Preview).
+  if (path === "/onsker") {
+    return handleWishlist(context, request);
+  }
+  if (path === "/albumsog") {
+    return searchAlbums(context, url.searchParams.get("q") || "");
   }
   if (path === "/info") {
     return json(await findInfo(context, url.searchParams.get("a") || "", url.searchParams.get("b") || "", url.searchParams.get("y") || "", url.searchParams.get("m") || ""));
