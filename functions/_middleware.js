@@ -72,7 +72,8 @@ export async function onRequest(context) {
       headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "private, no-cache", "X-Robots-Tag": "noindex" },
     });
   }
-  // The shared wishlist (kept in Cloudflare KV) and the album search used to add to it.
+  // The shared wishlist and the album search used to add to it. The list is kept in Cloudflare KV:
+  // a namespace "onskeliste" bound to this Pages project as ONSKELISTE (Production and Preview).
   if (path === "/onsker") {
     return handleWishlist(context, request);
   }
