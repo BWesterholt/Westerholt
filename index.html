@@ -192,6 +192,18 @@ button{font:inherit;color:inherit;letter-spacing:inherit}
   .tiles{grid-template-columns:1fr;grid-template-areas:"ai" "excel" "eco" "tools";gap:12px}
 }
 
+/* Sideprojekt: pladesamlingen */
+.show{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:32px}
+.show__shot{margin:0;background:var(--card);border-radius:18px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}
+.show__shot .win{display:flex;gap:7px;padding:13px 16px;border-bottom:1px solid var(--sep);flex:none}
+.show__shot .win span{width:11px;height:11px;border-radius:50%;background:var(--fill2)}
+.show__shot img{display:block;width:100%;height:auto;border-bottom:1px solid var(--sep)}
+.show__shot figcaption{padding:15px 18px 17px;font-size:.9375rem;line-height:1.4;color:var(--muted);letter-spacing:-.005em}
+.show__shot figcaption b{color:var(--ink);font-weight:600}
+.show__note{margin-top:16px;font-size:.9375rem;color:var(--muted);letter-spacing:-.005em}
+.show__note::before{content:"";display:inline-block;width:14px;height:14px;margin-right:7px;vertical-align:-2px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Crect x='5' y='11' width='14' height='10' rx='2'/%3E%3Cpath d='M8 11V7a4 4 0 0 1 8 0v4'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Crect x='5' y='11' width='14' height='10' rx='2'/%3E%3Cpath d='M8 11V7a4 4 0 0 1 8 0v4'/%3E%3C/svg%3E") center/contain no-repeat}
+@media(max-width:760px){.show{grid-template-columns:1fr;gap:12px}}
+
 /* Lister i iOS-stil */
 .list{background:var(--card);border-radius:18px;box-shadow:var(--shadow);overflow:hidden}
 .item{position:relative;display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:2px 14px;align-items:start;padding:16px 20px;scroll-margin-top:72px}
@@ -244,7 +256,7 @@ button{font:inherit;color:inherit;letter-spacing:inherit}
   html,body{background:#fff}
   body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .wrap{max-width:none;padding-inline:0}
-  .nav,.skip,.seg,.actions,.toast,.avatar,.contact p{display:none !important}
+  .nav,.skip,.seg,.actions,.toast,.avatar,.contact p,#projekt{display:none !important}
   .card,.list,.tile{box-shadow:none;border:1px solid rgba(60,60,67,.18)}
   .hero{text-align:left;padding:0 0 4mm}
   .hero h1{font-size:2.8rem}
@@ -285,6 +297,7 @@ button{font:inherit;color:inherit;letter-spacing:inherit}
         <li><a href="#tidslinje">Tidslinje</a></li>
         <li><a href="#om">Om mig</a></li>
         <li><a href="#erfaring">Erfaring</a></li>
+        <li><a href="#projekt">Projekt</a></li>
         <li class="nav__cta"><a href="#kontakt">Kontakt</a></li>
       </ul>
     </nav>
@@ -480,6 +493,29 @@ button{font:inherit;color:inherit;letter-spacing:inherit}
         <p class="item__when tnum">2019 – 2022</p>
       </li>
     </ul>
+  </section>
+
+  <section class="sec wrap" id="projekt" aria-labelledby="h-proj">
+    <h2 id="h-proj">Et sideprojekt</h2>
+    <p class="statement">Min familie har samlet plader i 50 år. <span>Så jeg byggede en hjemmeside, hvor hele samlingen kan søges igennem.</span></p>
+    <div class="facts">
+      <span class="chip">2.252 plader</span>
+      <span class="chip">Bygget med AI</span>
+      <span class="chip">Cover og sangliste hentes selv</span>
+    </div>
+    <div class="show">
+      <figure class="show__shot">
+        <div class="win" aria-hidden="true"><span></span><span></span><span></span></div>
+        <img src="/billeder/projekt/samling.png" alt="Søgning i pladesamlingen. En plade er valgt, og til højre står cover, sangliste og de medvirkende musikere." width="1600" height="1000" loading="lazy" decoding="async">
+        <figcaption><b>Søg blandt alle 2.252 plader.</b> For hver plade henter siden selv coveret, sanglisten og hvem der spiller på hver sang.</figcaption>
+      </figure>
+      <figure class="show__shot">
+        <div class="win" aria-hidden="true"><span></span><span></span><span></span></div>
+        <img src="/billeder/projekt/onskeliste.png" alt="En delt ønskeliste med fire plader, hver mærket med hvem der ønsker sig den, og en advarsel hvis pladen allerede står i samlingen." width="1600" height="822" loading="lazy" decoding="async">
+        <figcaption><b>En delt ønskeliste.</b> Far og søn kan se, hvad den anden leder efter, og siden advarer, hvis pladen allerede står i samlingen.</figcaption>
+      </figure>
+    </div>
+    <p class="show__note">Selve samlingen ligger bag et kodeord, så den er privat for familien.</p>
   </section>
 
   <section class="contact wrap" id="kontakt" aria-labelledby="h-kon">
