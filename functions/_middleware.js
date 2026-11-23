@@ -75,9 +75,11 @@ export async function onRequest(context) {
   }
 
   if (path === "/samling.json") {
-    return new Response(await decryptCollection(password), {
-      headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "private, no-cache", "X-Robots-Tag": "noindex" },
-    });
+    // The browser keeps the collection and only asks whether it changed: then nothing is decrypted or sent.
+    const tag = `"${samling.iv}"`;
+    const headers = { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "private, no-cache", ETag: tag, "X-Robots-Tag": "noindex" };
+    if (request.headers.get("If-None-Match") === tag) return new Response(null, { status: 304, headers });
+    return new Response(await decryptCollection(password), { headers });
   }
   // The shared wishlist and the album search used to add to it. The list is kept in Cloudflare KV:
   // a namespace "onskeliste" bound to this Pages project as ONSKELISTE (Production and Preview).
@@ -92,10 +94,10 @@ export async function onRequest(context) {
     return handleCovers(context, request);
   }
   if (path === "/info") {
-    return json(await findInfo(context, url.searchParams.get("a") || "", url.searchParams.get("b") || "", url.searchParams.get("y") || "", url.searchParams.get("m") || ""));
+    return lookup(await findInfo(context, url.searchParams.get("a") || "", url.searchParams.get("b") || "", url.searchParams.get("y") || "", url.searchParams.get("m") || ""));
   }
   if (path === "/medvirkende") {
-    return json(await findCredits(context, url.searchParams.get("a") || "", url.searchParams.get("b") || "", url.searchParams.get("y") || "", url.searchParams.get("m") || ""));
+    return lookup(await findCredits(context, url.searchParams.get("a") || "", url.searchParams.get("b") || "", url.searchParams.get("y") || "", url.searchParams.get("m") || ""));
   }
   // Song search and person pages run in the browser (lib/nils-search.js); these two only pass lookups on.
   if (path === "/mb") {
@@ -113,7 +115,7 @@ export async function onRequest(context) {
   if (path !== "/") {
     return Response.redirect(new URL(base, url), 302);
   }
-  return page(appPage.replaceAll("__BASE__", prefix).replace("/*__SEARCH__*/", () => searchCode));
+  return cachedPage(request, "app" + prefix, () => appPage.replaceAll("__BASE__", prefix).replace("/*__SEARCH__*/", () => searchCode));
 }
 
 // The demo: no password, a made-up collection, and a wishlist kept in the visitor's browser.
@@ -125,8 +127,8 @@ async function demo(context, url) {
   }
   if (path === "/albumsog") return searchAlbums(context, url.searchParams.get("q") || "");
   const p = (k) => url.searchParams.get(k) || "";
-  if (path === "/info") return json(await findInfo(context, p("a"), p("b"), p("y"), p("m")));
-  if (path === "/medvirkende") return json(await findCredits(context, p("a"), p("b"), p("y"), p("m")));
+  if (path === "/info") return lookup(await findInfo(context, p("a"), p("b"), p("y"), p("m")));
+  if (path === "/medvirkende") return lookup(await findCredits(context, p("a"), p("b"), p("y"), p("m")));
   if (path === "/mb") {
     if (!/^(artist|recording|release|release-group)\/?[0-9a-f-]{0,36}\?/.test(p("p"))) return json({ fejl: "ukendt" }, 400);
     return passThrough(`https://musicbrainz.org/ws/2/${p("p")}`, true);
@@ -136,7 +138,7 @@ async function demo(context, url) {
     return passThrough(p("u"), false);
   }
   if (path !== "/") return Response.redirect(new URL(DEMO, url), 302);
-  const html = appPage
+  return cachedPage(context.request, "demo", () => appPage
     .replace('<a class="logout" href="__BASE__/?log-ud">Log ud</a>', '')
     .replace('"Excel-ark fra " + versionDate(data.version) + ", lagt ind " + dkDate(data.loaded)', '"Eksempeldata med klassisk rock"')
     .replace('"Data: " + data.file + " · lagt ind " + dkDate(data.loaded)', '"Demo med eksempelplader. Den rigtige samling ligger bag et kodeord."')
@@ -146,8 +148,7 @@ async function demo(context, url) {
     .replace("</head>", "<style>#wseg,#fwho,.flabel:has(+ #fwho){display:none !important}</style></head>")
     .replace("<head>", "<head>" + demoScript)
     .replaceAll("__BASE__", DEMO)
-    .replace("/*__SEARCH__*/", () => searchCode);
-  return page(html);
+    .replace("/*__SEARCH__*/", () => searchCode));
 }
 
 // The collection is gzipped JSON, encrypted with AES-GCM using a key made from the password.
@@ -194,6 +195,29 @@ function readCookie(request, name) {
     if (key === name) return decodeURIComponent(rest.join("="));
   }
   return "";
+}
+
+// Lookups are kept by the browser for a day (failed ones not), so going back to a record is instant.
+function lookup(data) {
+  return new Response(JSON.stringify(data), {
+    headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": data && data.retry ? "private, no-store" : "private, max-age=86400", "X-Robots-Tag": "noindex" },
+  });
+}
+
+// The page is built once per server and tagged with a fingerprint: a browser that already has
+// this version gets a tiny "not changed" answer instead of the whole page.
+const built = new Map();
+async function cachedPage(request, name, make) {
+  let hit = built.get(name);
+  if (!hit) {
+    const html = make();
+    const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(html));
+    hit = { html, tag: '"' + [...new Uint8Array(hash).slice(0, 12)].map((b) => b.toString(16).padStart(2, "0")).join("") + '"' };
+    built.set(name, hit);
+  }
+  const headers = { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "private, no-cache", ETag: hit.tag, "X-Robots-Tag": "noindex" };
+  if (request.headers.get("If-None-Match") === hit.tag) return new Response(null, { status: 304, headers });
+  return new Response(hit.html, { headers });
 }
 
 function page(body, status = 200) {
