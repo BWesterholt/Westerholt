@@ -135,6 +135,10 @@ async function demo(context, url) {
     .replace('<a class="logout" href="__BASE__/?log-ud">Log ud</a>', '')
     .replace('"Excel-ark fra " + versionDate(data.version) + ", lagt ind " + dkDate(data.loaded)', '"Eksempeldata med klassisk rock"')
     .replace('"Data: " + data.file + " · lagt ind " + dkDate(data.loaded)', '"Demo med eksempelplader. Den rigtige samling ligger bag et kodeord."')
+    // No names in the demo: hide who wants what, and let anyone add or mark a record as bought.
+    .replace('if (!d.who.length) return err("Vælg hvem der ønsker pladen.");', "")
+    .replace('if (name === "kobt" && !button.getAttribute("data-by")) {', "if (false) {")
+    .replace("</head>", "<style>#wseg,#fwho,.flabel:has(+ #fwho){display:none !important}</style></head>")
     .replace("<head>", "<head>" + demoScript)
     .replaceAll("__BASE__", DEMO)
     .replace("/*__SEARCH__*/", () => searchCode);

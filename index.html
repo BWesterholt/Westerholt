@@ -193,10 +193,16 @@ button{font:inherit;color:inherit;letter-spacing:inherit}
 }
 
 /* Projekter: hvert projekt med et vindue, man kan prøve */
-.proj__head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px}
-.proj__head h3{font-size:1.5rem;font-weight:700;letter-spacing:-.022em}
-.proj__head p{margin-top:4px;max-width:36rem;color:var(--text)}
-.proj__tags{display:flex;flex-wrap:wrap;gap:8px}
+.proj__eyebrow{font-size:.875rem;font-weight:600;color:var(--muted);letter-spacing:0}
+.proj h3{margin-top:2px;font-size:clamp(1.5rem,1.2rem + 1.2vw,2rem);font-weight:700;letter-spacing:-.025em}
+.proj__lead{margin-top:6px;max-width:40rem;color:var(--text);font-size:clamp(1.0625rem,1rem + .3vw,1.1875rem)}
+.proj__h{margin-top:32px;font-size:1.0625rem;font-weight:600;color:var(--ink);letter-spacing:-.015em}
+.under{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 32px;margin-top:6px}
+.under li{padding:14px 0;border-top:1px solid var(--sep);font-size:.9375rem;line-height:1.45;color:var(--muted);letter-spacing:-.005em}
+.under b{display:block;color:var(--ink);font-weight:600;margin-bottom:2px}
+.proj__links{display:flex;flex-wrap:wrap;gap:8px 24px;margin-top:14px;font-weight:600}
+.proj__links a::after{content:" ›"}
+@media(max-width:640px){.under{grid-template-columns:1fr}}
 .demo{margin:18px 0 0;background:var(--card);border-radius:18px;box-shadow:var(--shadow-lg);overflow:hidden}
 .win{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--sep)}
 .win__dots{display:flex;gap:7px}
@@ -504,25 +510,25 @@ button{font:inherit;color:inherit;letter-spacing:inherit}
   <section class="sec wrap" id="projekt" aria-labelledby="h-proj">
     <h2 id="h-proj">Projekter</h2>
     <article class="proj">
-      <div class="proj__head">
-        <div>
-          <h3>Pladesamlingen</h3>
-          <p>Min egen app til min pladesamling. Søg i pladerne, se cover, sangliste og musikere, og hold en delt ønskeliste.</p>
-        </div>
-        <div class="proj__tags">
-          <span class="chip">Bygget med AI</span>
-          <span class="chip">JavaScript og Python</span>
-          <span class="chip">Cloudflare</span>
-        </div>
-      </div>
+      <p class="proj__eyebrow">Sideprojekt · 2026</p>
+      <h3>Pladesamlingen</h3>
+      <p class="proj__lead">Jeg samler på vinyl og CD, og over 2.000 plader lå i et Excel-ark. Så jeg byggede en app til dem. Prøv demoen, den kører med eksempelplader.</p>
       <figure class="demo">
         <div class="win">
           <span class="win__dots" aria-hidden="true"><i></i><i></i><i></i></span>
-          <span class="win__url">Demo med eksempelplader</span>
+          <span class="win__url">westerholt.dk/pladesamling-demo</span>
           <a class="win__open" href="/pladesamling-demo" target="_blank" rel="noopener">Åbn i fuld størrelse</a>
         </div>
         <iframe src="/pladesamling-demo" title="Demo af pladesamlingen, som du kan prøve" loading="lazy"></iframe>
       </figure>
+      <h4 class="proj__h">Under motorhjelmen</h4>
+      <ul class="under">
+        <li><b>Krypteret, selvom koden er åben.</b> Samlingen ligger AES-krypteret i et offentligt GitHub-repo og låses først op på serveren med det rigtige kodeord.</li>
+        <li><b>Tre musikdatabaser.</b> Cover, sangliste og hvem der spiller på hver sang hentes live fra Apple Music, Deezer og MusicBrainz og gemmes i cache.</li>
+        <li><b>Søg på en sang.</b> Browseren spørger MusicBrainz på tværs af alle 870 kunstnere i samlingen, så man finder sange, der ikke står i arket.</li>
+        <li><b>Serverless og uden frameworks.</b> Ren JavaScript på Cloudflares edge, med en database til ønskelisten og et Python-script, der læser Excel-arket.</li>
+      </ul>
+      <p class="proj__links"><a href="/pladesamling-demo" target="_blank" rel="noopener">Prøv demoen</a><a href="https://github.com/BWesterholt/Westerholt" rel="noopener">Se koden på GitHub</a></p>
     </article>
   </section>
 
