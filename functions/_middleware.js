@@ -8,6 +8,7 @@ import appPage from "../lib/nils-app.js";
 import { findInfo, findCredits } from "../lib/nils-lookup.js";
 import searchCode from "../lib/nils-search.js";
 import { handleWishlist, searchAlbums } from "../lib/nils-onsker.js";
+import { handleCovers } from "../lib/nils-omslag.js";
 import { demoCollection, demoScript } from "../lib/nils-demo.js";
 
 const PASSWORD_SHA256 = "629ff2a8c079344a59c0a0f604cbf9ff9cf2bf6273638ec85a31171c7c784724";
@@ -85,6 +86,10 @@ export async function onRequest(context) {
   }
   if (path === "/albumsog") {
     return searchAlbums(context, url.searchParams.get("q") || "");
+  }
+  // Covers chosen by hand, kept in the same KV store as the wishlist.
+  if (path === "/omslag") {
+    return handleCovers(context, request);
   }
   if (path === "/info") {
     return json(await findInfo(context, url.searchParams.get("a") || "", url.searchParams.get("b") || "", url.searchParams.get("y") || "", url.searchParams.get("m") || ""));
