@@ -192,17 +192,25 @@ button{font:inherit;color:inherit;letter-spacing:inherit}
   .tiles{grid-template-columns:1fr;grid-template-areas:"ai" "excel" "eco" "tools";gap:12px}
 }
 
-/* Sideprojekt: pladesamlingen */
-.show{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:32px}
-.show__shot{margin:0;background:var(--card);border-radius:18px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}
-.show__shot .win{display:flex;gap:7px;padding:13px 16px;border-bottom:1px solid var(--sep);flex:none}
-.show__shot .win span{width:11px;height:11px;border-radius:50%;background:var(--fill2)}
-.show__shot img{display:block;width:100%;height:auto;border-bottom:1px solid var(--sep)}
-.show__shot figcaption{padding:15px 18px 17px;font-size:.9375rem;line-height:1.4;color:var(--muted);letter-spacing:-.005em}
-.show__shot figcaption b{color:var(--ink);font-weight:600}
-.show__note{margin-top:16px;font-size:.9375rem;color:var(--muted);letter-spacing:-.005em}
-.show__note::before{content:"";display:inline-block;width:14px;height:14px;margin-right:7px;vertical-align:-2px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Crect x='5' y='11' width='14' height='10' rx='2'/%3E%3Cpath d='M8 11V7a4 4 0 0 1 8 0v4'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Crect x='5' y='11' width='14' height='10' rx='2'/%3E%3Cpath d='M8 11V7a4 4 0 0 1 8 0v4'/%3E%3C/svg%3E") center/contain no-repeat}
-@media(max-width:760px){.show{grid-template-columns:1fr;gap:12px}}
+/* Sideprojekt: pladesamlingen, med en demo man kan prøve */
+.show__lead{max-width:40rem;margin-top:16px;font-size:clamp(1.0625rem,1rem + .3vw,1.1875rem);color:var(--text)}
+.demo{margin:28px 0 0;background:var(--card);border-radius:18px;box-shadow:var(--shadow-lg);overflow:hidden}
+.win{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--sep)}
+.win__dots{display:flex;gap:7px}
+.win__dots i{width:11px;height:11px;border-radius:50%;background:var(--fill2)}
+.win__url{background:var(--fill);border-radius:8px;padding:4px 14px;font-size:.8125rem;color:var(--muted);letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.win__open{justify-self:end;font-size:.875rem;font-weight:600;letter-spacing:0;white-space:nowrap}
+.demo iframe{display:block;width:100%;height:clamp(560px,78vh,780px);border:0;background:#F6F1E9}
+.show__h{margin-top:44px;font-size:1.375rem;font-weight:700;letter-spacing:-.02em}
+.tech{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:16px}
+.tech + .facts{margin-top:18px}
+@media(max-width:860px){.tech{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:640px){
+  .tech{grid-template-columns:1fr;gap:12px}
+  .win{grid-template-columns:auto 1fr;padding:9px 12px}
+  .win__url{display:none}
+  .demo iframe{height:640px}
+}
 
 /* Lister i iOS-stil */
 .list{background:var(--card);border-radius:18px;box-shadow:var(--shadow);overflow:hidden}
@@ -497,25 +505,51 @@ button{font:inherit;color:inherit;letter-spacing:inherit}
 
   <section class="sec wrap" id="projekt" aria-labelledby="h-proj">
     <h2 id="h-proj">Et sideprojekt</h2>
-    <p class="statement">Min familie har samlet plader i 50 år. <span>Så jeg byggede en hjemmeside, hvor hele samlingen kan søges igennem.</span></p>
+    <p class="statement">Jeg har altid samlet på plader. <span>Så jeg byggede min egen app til samlingen.</span></p>
+    <p class="show__lead">Prøv den herunder. Søg efter en kunstner, klik på en plade eller en musiker, eller sæt noget på ønskelisten. Demoen bruger eksempelplader med klassisk rock, ikke min egen samling.</p>
+    <figure class="demo">
+      <div class="win">
+        <span class="win__dots" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span class="win__url">westerholt.dk/pladesamling-demo</span>
+        <a class="win__open" href="/pladesamling-demo" target="_blank" rel="noopener">Åbn i fuld størrelse</a>
+      </div>
+      <iframe src="/pladesamling-demo" title="Demo af pladesamlingen, som du kan prøve" loading="lazy"></iframe>
+    </figure>
+
+    <h3 class="show__h">Sådan virker den</h3>
+    <div class="tech">
+      <article class="tile">
+        <h3>Fra Excel til app</h3>
+        <p>Samlingen bor i et Excel-ark. Et Python-script laver arket om til data, siden kan læse, og krypterer det, så kun dem med koden kan se det.</p>
+      </article>
+      <article class="tile">
+        <h3>Henter selv cover og sangliste</h3>
+        <p>For hver plade slår siden op hos Apple Music, Deezer og MusicBrainz og finder coveret, sanglisten og hvem der spiller på hver sang.</p>
+      </article>
+      <article class="tile">
+        <h3>Søg på en sang</h3>
+        <p>Skriv en sangtitel, så finder siden de plader, sangen er på. Også selvom sangen ikke står i Excel-arket.</p>
+      </article>
+      <article class="tile">
+        <h3>Musikernes egne sider</h3>
+        <p>Klik på en musiker eller producer og se alle de plader i samlingen, de har været med på, og hvad de lavede.</p>
+      </article>
+      <article class="tile">
+        <h3>Delt ønskeliste i skyen</h3>
+        <p>Ønskelisten gemmes i en database hos Cloudflare, så alle ser den samme liste. Den advarer, hvis pladen allerede står på hylden.</p>
+      </article>
+      <article class="tile">
+        <h3>Sikker og som en app</h3>
+        <p>Koden tjekkes på serveren og ikke i browseren. Siden kan lægges på telefonens hjemmeskærm og bruges som en app.</p>
+      </article>
+    </div>
     <div class="facts">
-      <span class="chip">2.252 plader</span>
       <span class="chip">Bygget med AI</span>
-      <span class="chip">Cover og sangliste hentes selv</span>
+      <span class="chip">JavaScript</span>
+      <span class="chip">Python</span>
+      <span class="chip">Cloudflare Pages og KV</span>
+      <span class="chip">Musik-API’er</span>
     </div>
-    <div class="show">
-      <figure class="show__shot">
-        <div class="win" aria-hidden="true"><span></span><span></span><span></span></div>
-        <img src="/billeder/projekt/samling.png" alt="Søgning i pladesamlingen. En plade er valgt, og til højre står cover, sangliste og de medvirkende musikere." width="1600" height="1000" loading="lazy" decoding="async">
-        <figcaption><b>Søg blandt alle 2.252 plader.</b> For hver plade henter siden selv coveret, sanglisten og hvem der spiller på hver sang.</figcaption>
-      </figure>
-      <figure class="show__shot">
-        <div class="win" aria-hidden="true"><span></span><span></span><span></span></div>
-        <img src="/billeder/projekt/onskeliste.png" alt="En delt ønskeliste med fire plader, hver mærket med hvem der ønsker sig den, og en advarsel hvis pladen allerede står i samlingen." width="1600" height="822" loading="lazy" decoding="async">
-        <figcaption><b>En delt ønskeliste.</b> Far og søn kan se, hvad den anden leder efter, og siden advarer, hvis pladen allerede står i samlingen.</figcaption>
-      </figure>
-    </div>
-    <p class="show__note">Selve samlingen ligger bag et kodeord, så den er privat for familien.</p>
   </section>
 
   <section class="contact wrap" id="kontakt" aria-labelledby="h-kon">

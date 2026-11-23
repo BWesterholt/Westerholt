@@ -8,9 +8,12 @@ import appPage from "../lib/nils-app.js";
 import { findInfo, findCredits } from "../lib/nils-lookup.js";
 import searchCode from "../lib/nils-search.js";
 import { handleWishlist, searchAlbums } from "../lib/nils-onsker.js";
+import { demoCollection, demoScript } from "../lib/nils-demo.js";
 
 const PASSWORD_SHA256 = "629ff2a8c079344a59c0a0f604cbf9ff9cf2bf6273638ec85a31171c7c784724";
 const COOKIE = "nils_adgang";
+// A public demo with made-up classic rock records, shown in a window on the homepage.
+const DEMO = "/pladesamling-demo";
 
 export async function onRequest(context) {
   const { request } = context;
@@ -31,6 +34,9 @@ export async function onRequest(context) {
   // it can also be reached at /nils, so it can be tried before it goes live.
   const isNilsHost = host.startsWith("nils.");
   const isPreview = host.endsWith(".pages.dev") && (url.pathname === "/nils" || url.pathname.startsWith("/nils/"));
+  if (!isNilsHost && (url.pathname === DEMO || url.pathname.startsWith(DEMO + "/"))) {
+    return demo(context, url);
+  }
   if (!isNilsHost && !isPreview) {
     return context.next();
   }
@@ -103,6 +109,36 @@ export async function onRequest(context) {
     return Response.redirect(new URL(base, url), 302);
   }
   return page(appPage.replaceAll("__BASE__", prefix).replace("/*__SEARCH__*/", () => searchCode));
+}
+
+// The demo: no password, a made-up collection, and a wishlist kept in the visitor's browser.
+// Covers, track lists and credits are looked up the same way as in the real collection.
+async function demo(context, url) {
+  const path = url.pathname.slice(DEMO.length) || "/";
+  if (path === "/samling.json") {
+    return new Response(demoCollection, { headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "public, max-age=300" } });
+  }
+  if (path === "/albumsog") return searchAlbums(context, url.searchParams.get("q") || "");
+  const p = (k) => url.searchParams.get(k) || "";
+  if (path === "/info") return json(await findInfo(context, p("a"), p("b"), p("y"), p("m")));
+  if (path === "/medvirkende") return json(await findCredits(context, p("a"), p("b"), p("y"), p("m")));
+  if (path === "/mb") {
+    if (!/^(artist|recording|release|release-group)\/?[0-9a-f-]{0,36}\?/.test(p("p"))) return json({ fejl: "ukendt" }, 400);
+    return passThrough(`https://musicbrainz.org/ws/2/${p("p")}`, true);
+  }
+  if (path === "/ext") {
+    if (!/^https:\/\/(itunes\.apple\.com\/search|api\.deezer\.com\/search)\?/.test(p("u"))) return json({ fejl: "ukendt" }, 400);
+    return passThrough(p("u"), false);
+  }
+  if (path !== "/") return Response.redirect(new URL(DEMO, url), 302);
+  const html = appPage
+    .replace('<a class="logout" href="__BASE__/?log-ud">Log ud</a>', '')
+    .replace('"Excel-ark fra " + versionDate(data.version) + ", lagt ind " + dkDate(data.loaded)', '"Eksempeldata med klassisk rock"')
+    .replace('"Data: " + data.file + " · lagt ind " + dkDate(data.loaded)', '"Demo med eksempelplader. Den rigtige samling ligger bag et kodeord."')
+    .replace("<head>", "<head>" + demoScript)
+    .replaceAll("__BASE__", DEMO)
+    .replace("/*__SEARCH__*/", () => searchCode);
+  return page(html);
 }
 
 // The collection is gzipped JSON, encrypted with AES-GCM using a key made from the password.
