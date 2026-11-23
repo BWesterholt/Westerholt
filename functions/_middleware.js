@@ -5,7 +5,7 @@
 // and re-run tools/opdater-samling.py with the new password (the collection is encrypted with it).
 import samling from "../data/samling.js";
 import appPage from "../lib/nils-app.js";
-import { findInfo, findCredits } from "../lib/nils-lookup.js";
+import { findInfo, findCredits, findCover } from "../lib/nils-lookup.js";
 import searchCode from "../lib/nils-search.js";
 import { handleWishlist, searchAlbums } from "../lib/nils-onsker.js";
 import { handleCovers } from "../lib/nils-omslag.js";
@@ -96,6 +96,9 @@ export async function onRequest(context) {
   if (path === "/info") {
     return lookup(await findInfo(context, url.searchParams.get("a") || "", url.searchParams.get("b") || "", url.searchParams.get("y") || "", url.searchParams.get("m") || ""));
   }
+  if (path === "/coversog") {
+    return lookup(await findCover(context, url.searchParams.get("a") || "", url.searchParams.get("b") || "", url.searchParams.get("y") || "", url.searchParams.get("m") || ""));
+  }
   if (path === "/medvirkende") {
     return lookup(await findCredits(context, url.searchParams.get("a") || "", url.searchParams.get("b") || "", url.searchParams.get("y") || "", url.searchParams.get("m") || ""));
   }
@@ -129,6 +132,7 @@ async function demo(context, url) {
   const p = (k) => url.searchParams.get(k) || "";
   if (path === "/info") return lookup(await findInfo(context, p("a"), p("b"), p("y"), p("m")));
   if (path === "/medvirkende") return lookup(await findCredits(context, p("a"), p("b"), p("y"), p("m")));
+  if (path === "/coversog") return lookup(await findCover(context, p("a"), p("b"), p("y"), p("m")));
   if (path === "/mb") {
     if (!/^(artist|recording|release|release-group)\/?[0-9a-f-]{0,36}\?/.test(p("p"))) return json({ fejl: "ukendt" }, 400);
     return passThrough(`https://musicbrainz.org/ws/2/${p("p")}`, true);
