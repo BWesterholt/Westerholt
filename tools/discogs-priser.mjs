@@ -1,7 +1,9 @@
 // Looks up a guide price on Discogs for every vinyl record in the collection, and saves them
 // encrypted in data/priser.js (gzipped + AES-GCM with the same key as the collection, because
 // this repository is public). Records looked up less than 60 days ago are skipped, so a run
-// only does what is new or old. Run by .github/workflows/discogs-priser.yml every week.
+// only does what is new, old, or changed on the page: there you can type in your own copy's
+// catalogue number (from the centre label) and year, and the next run (every hour) uses them.
+// Run by .github/workflows/discogs-priser.yml.
 //
 // Run by hand: NILS_KODE=<password> DISCOGS_TOKEN=<token> node tools/discogs-priser.mjs
 // Optional: MAX_MINUTTER=50 stops after that many minutes (what is found is saved).
@@ -30,7 +32,12 @@ const { records } = await open(samling);
 const prices = gemte ? await open(gemte) : {};
 const today = Math.floor(Date.now() / 864e5);
 const vinyl = records.filter((r) => r.t === "Vinyl" && (r.a || r.b));
-const todo = vinyl.filter((r) => { const p = prices[keyOf(r)]; return !p || today - (p.t || 0) >= OLD_DAYS; });
+// The copies' own details typed in on the page (catalogue number, year), kept on the website.
+const editions = await fetchEditions();
+// If the website didn't answer, keep the details used last time.
+const edOf = (r) => editions ? editions[keyOf(r)] || null : (prices[keyOf(r)] && prices[keyOf(r)].ed) || null;
+const sameEd = (a, b) => JSON.stringify(a || null) === JSON.stringify(b || null);
+const todo = vinyl.filter((r) => { const p = prices[keyOf(r)]; return !p || today - (p.t || 0) >= OLD_DAYS || !sameEd(p.ed, edOf(r)); });
 console.log(`${vinyl.length} vinylplader, ${todo.length} skal slås op.`);
 
 const started = Date.now();
@@ -38,8 +45,9 @@ let done = 0, found = 0, failed = 0;
 for (const r of todo) {
   if (Date.now() - started > maxMinutes * 60000) { console.log("Tiden er gået; resten tages næste gang."); break; }
   try {
-    const res = await lookUp(token, wanted(r.a, r.b, r.y, /^(LP|MX)/.test(r.m || "") ? r.m : "LP"));
-    prices[keyOf(r)] = { ...res, t: today };
+    const ed = edOf(r);
+    const res = await lookUp(token, wanted(r.a, r.b, r.y, /^(LP|MX)/.test(r.m || "") ? r.m : "LP"), ed || {});
+    prices[keyOf(r)] = { ...res, t: today, ...(ed ? { ed } : {}) };
     if (res.p) found++;
   } catch (e) {
     if (e.denied) { console.error(e.message); break; }
@@ -51,6 +59,18 @@ await save();
 console.log(`Færdig: ${done} slået op, ${found} med pris, ${failed} fejl.`);
 
 function keyOf(r) { return [r.a, r.b, r.y, r.m].join("|"); }
+
+async function fetchEditions() {
+  const site = process.env.NILS_SIDE || "https://nils.westerholt.dk";
+  try {
+    const res = await fetch(site + "/udgaver", { headers: { Cookie: "nils_adgang=" + encodeURIComponent(password) }, signal: AbortSignal.timeout(20000) });
+    const d = await res.json();
+    return (d && d.udgaver) || {};
+  } catch (e) {
+    console.log("Kunne ikke hente udgaverne fra siden:", e.message);
+    return null;
+  }
+}
 
 async function save() {
   // Only prices for records still in the collection are kept.
