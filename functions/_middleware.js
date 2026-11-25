@@ -10,6 +10,7 @@ import searchCode from "../lib/nils-search.js";
 import { handleWishlist, searchAlbums } from "../lib/nils-onsker.js";
 import { handleCovers } from "../lib/nils-omslag.js";
 import priser from "../data/priser.js";
+import { handleEditions } from "../lib/nils-udgaver.js";
 import { demoCollection, demoScript } from "../lib/nils-demo.js";
 
 const PASSWORD_SHA256 = "629ff2a8c079344a59c0a0f604cbf9ff9cf2bf6273638ec85a31171c7c784724";
@@ -101,6 +102,10 @@ export async function onRequest(context) {
     const headers = { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "private, no-cache", ETag: tag, "X-Robots-Tag": "noindex" };
     if (request.headers.get("If-None-Match") === tag) return new Response(null, { status: 304, headers });
     return new Response(priser ? `{"priser":${await decryptBox(priser, password)}}` : `{"priser":{}}`, { headers });
+  }
+  // Your own copy's catalogue number and year, used by the price lookup.
+  if (path === "/udgaver") {
+    return handleEditions(context, request);
   }
   if (path === "/info") {
     return lookup(await findInfo(context, url.searchParams.get("a") || "", url.searchParams.get("b") || "", url.searchParams.get("y") || "", url.searchParams.get("m") || ""));
