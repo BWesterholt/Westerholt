@@ -49,7 +49,7 @@ for (const w of wishes || []) {
   if (!w || !w.id || w.bought || w.format === "CD" || !(w.a || w.b)) continue;
   const key = "ønske:" + w.id, q = w.a + "|" + w.b, p = prices[key];
   wishKeys.add(key);
-  if (stale(p) || p.q !== q) jobs.unshift({ key, q, want: wanted(w.a, w.b, w.y || "", "LP"), ed: null });
+  if (stale(p) || p.q !== q || !p.all) jobs.unshift({ key, q, all: true, want: wanted(w.a, w.b, w.y || "", "LP"), ed: null });
 }
 const todo = jobs;
 console.log(`${vinyl.length} vinylplader og ${wishKeys.size} ønsker, ${todo.length} skal slås op.`);
@@ -59,8 +59,8 @@ let done = 0, found = 0, failed = 0;
 for (const r of todo) {
   if (Date.now() - started > maxMinutes * 60000) { console.log("Tiden er gået; resten tages næste gang."); break; }
   try {
-    const res = await lookUp(token, r.want, r.ed || {});
-    prices[r.key] = { ...res, t: today, ...(r.ed ? { ed: r.ed } : {}), ...(r.q ? { q: r.q } : {}) };
+    const res = await lookUp(token, r.want, r.ed || {}, !!r.all);
+    prices[r.key] = { ...res, t: today, ...(r.ed ? { ed: r.ed } : {}), ...(r.q ? { q: r.q } : {}), ...(r.all ? { all: 1 } : {}) };
     if (res.p) found++;
   } catch (e) {
     if (e.denied) { console.error(e.message); break; }
