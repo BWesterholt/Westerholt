@@ -1,0 +1,39 @@
+# Looks up Discogs guide prices for the vinyl records every Monday night (and when started by
+# hand under Actions > "Discogs-priser" > Run workflow), and saves them in data/priser.js.
+# Needs two repository secrets: DISCOGS_TOKEN (personal Discogs token) and NILS_KODE (the
+# password of nils.westerholt.dk, which the collection and the prices are encrypted with).
+name: Discogs-priser
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 2 * * 1"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: discogs-priser
+  cancel-in-progress: false
+
+jobs:
+  priser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Slå priser op på Discogs
+        env:
+          DISCOGS_TOKEN: ${{ secrets.DISCOGS_TOKEN }}
+          NILS_KODE: ${{ secrets.NILS_KODE }}
+          MAX_MINUTTER: "300"
+        run: node tools/discogs-priser.mjs
+      - name: Gem priserne
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/priser.js
+          git diff --cached --quiet || (git commit -m "Opdater Discogs-priser" && git push)
