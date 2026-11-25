@@ -12,7 +12,7 @@ import { gzipSync, gunzipSync } from "node:zlib";
 import { webcrypto as crypto } from "node:crypto";
 import samling from "../data/samling.js";
 import gemte from "../data/priser.js";
-import { lookUp } from "../lib/nils-pris.js";
+import { lookUp, VERSION } from "../lib/nils-pris.js";
 import { wanted } from "../lib/nils-lookup.js";
 
 const password = process.env.NILS_KODE, token = process.env.DISCOGS_TOKEN;
@@ -36,18 +36,31 @@ const vinyl = records.filter((r) => r.t === "Vinyl" && (r.a || r.b));
 const editions = await fetchEditions();
 // If the website didn't answer, keep the details used last time.
 const edOf = (r) => editions ? editions[keyOf(r)] || null : (prices[keyOf(r)] && prices[keyOf(r)].ed) || null;
-const sameEd = (a, b) => JSON.stringify(a || null) === JSON.stringify(b || null);
-const todo = vinyl.filter((r) => { const p = prices[keyOf(r)]; return !p || today - (p.t || 0) >= OLD_DAYS || !sameEd(p.ed, edOf(r)); });
-console.log(`${vinyl.length} vinylplader, ${todo.length} skal slås op.`);
+// Only the catalogue number and year change which pressing is found; the grade is picked on the page.
+const pressing = (e) => JSON.stringify(e && (e.c || e.y) ? { c: e.c || "", y: e.y || "" } : null);
+const sameEd = (a, b) => pressing(a) === pressing(b);
+const stale = (p) => !p || p.v !== VERSION || today - (p.t || 0) >= OLD_DAYS;
+const jobs = vinyl.filter((r) => { const p = prices[keyOf(r)]; return stale(p) || !sameEd(p.ed, edOf(r)); })
+  .map((r) => ({ key: keyOf(r), want: wanted(r.a, r.b, r.y, /^(LP|MX)/.test(r.m || "") ? r.m : "LP"), ed: edOf(r) }));
+// The wishlist too (not CDs, not bought), so you know what a fair price is when shopping.
+const wishes = (await fromSite("/onsker", "items")) || null;
+const wishKeys = new Set();
+for (const w of wishes || []) {
+  if (!w || !w.id || w.bought || w.format === "CD" || !(w.a || w.b)) continue;
+  const key = "ønske:" + w.id, q = w.a + "|" + w.b, p = prices[key];
+  wishKeys.add(key);
+  if (stale(p) || p.q !== q) jobs.unshift({ key, q, want: wanted(w.a, w.b, w.y || "", "LP"), ed: null });
+}
+const todo = jobs;
+console.log(`${vinyl.length} vinylplader og ${wishKeys.size} ønsker, ${todo.length} skal slås op.`);
 
 const started = Date.now();
 let done = 0, found = 0, failed = 0;
 for (const r of todo) {
   if (Date.now() - started > maxMinutes * 60000) { console.log("Tiden er gået; resten tages næste gang."); break; }
   try {
-    const ed = edOf(r);
-    const res = await lookUp(token, wanted(r.a, r.b, r.y, /^(LP|MX)/.test(r.m || "") ? r.m : "LP"), ed || {});
-    prices[keyOf(r)] = { ...res, t: today, ...(ed ? { ed } : {}) };
+    const res = await lookUp(token, r.want, r.ed || {});
+    prices[r.key] = { ...res, t: today, ...(r.ed ? { ed: r.ed } : {}), ...(r.q ? { q: r.q } : {}) };
     if (res.p) found++;
   } catch (e) {
     if (e.denied) { console.error(e.message); break; }
@@ -61,13 +74,20 @@ console.log(`Færdig: ${done} slået op, ${found} med pris, ${failed} fejl.`);
 function keyOf(r) { return [r.a, r.b, r.y, r.m].join("|"); }
 
 async function fetchEditions() {
+  const d = await fromSite("/udgaver", "udgaver");
+  return d ? d : null;
+}
+
+// Reads something from the website, logged in with the password. Null when it doesn't answer.
+async function fromSite(path, field) {
   const site = process.env.NILS_SIDE || "https://nils.westerholt.dk";
   try {
-    const res = await fetch(site + "/udgaver", { headers: { Cookie: "nils_adgang=" + encodeURIComponent(password) }, signal: AbortSignal.timeout(20000) });
+    const res = await fetch(site + path, { headers: { Cookie: "nils_adgang=" + encodeURIComponent(password) }, signal: AbortSignal.timeout(20000) });
+    if (!res.ok) throw new Error(String(res.status));
     const d = await res.json();
-    return (d && d.udgaver) || {};
+    return (d && d[field]) || (field === "items" ? [] : {});
   } catch (e) {
-    console.log("Kunne ikke hente udgaverne fra siden:", e.message);
+    console.log("Kunne ikke hente " + path + " fra siden:", e.message);
     return null;
   }
 }
@@ -76,6 +96,8 @@ async function save() {
   // Only prices for records still in the collection are kept.
   const keep = {};
   for (const r of vinyl) { const k = keyOf(r); if (prices[k]) keep[k] = prices[k]; }
+  // Wishes: the current ones, or all saved ones if the website didn't answer.
+  for (const k in prices) if (k.startsWith("ønske:") && (wishes ? wishKeys.has(k) : true)) keep[k] = prices[k];
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const data = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, gzipSync(JSON.stringify(keep)));
   const box = { iv: Buffer.from(iv).toString("base64"), data: Buffer.from(data).toString("base64") };
