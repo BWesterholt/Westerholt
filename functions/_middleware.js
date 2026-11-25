@@ -9,6 +9,7 @@ import { findInfo, findCredits, findCover } from "../lib/nils-lookup.js";
 import searchCode from "../lib/nils-search.js";
 import { handleWishlist, searchAlbums } from "../lib/nils-onsker.js";
 import { handleCovers } from "../lib/nils-omslag.js";
+import { findPrice, handlePrices } from "../lib/nils-pris.js";
 import { demoCollection, demoScript } from "../lib/nils-demo.js";
 
 const PASSWORD_SHA256 = "629ff2a8c079344a59c0a0f604cbf9ff9cf2bf6273638ec85a31171c7c784724";
@@ -92,6 +93,13 @@ export async function onRequest(context) {
   // Covers chosen by hand, kept in the same KV store as the wishlist.
   if (path === "/omslag") {
     return handleCovers(context, request);
+  }
+  // Guide prices from Discogs (lib/nils-pris.js): one record looked up, and all prices found so far.
+  if (path === "/pris") {
+    return lookup(await findPrice(context, url.searchParams.get("a") || "", url.searchParams.get("b") || "", url.searchParams.get("y") || "", url.searchParams.get("m") || ""));
+  }
+  if (path === "/priser") {
+    return handlePrices(context, request);
   }
   if (path === "/info") {
     return lookup(await findInfo(context, url.searchParams.get("a") || "", url.searchParams.get("b") || "", url.searchParams.get("y") || "", url.searchParams.get("m") || ""));
