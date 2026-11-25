@@ -11,6 +11,7 @@ import { handleWishlist, searchAlbums } from "../lib/nils-onsker.js";
 import { handleCovers } from "../lib/nils-omslag.js";
 import priser from "../data/priser.js";
 import { handleEditions } from "../lib/nils-udgaver.js";
+import { handlePeople } from "../lib/nils-personer.js";
 import { demoCollection, demoScript } from "../lib/nils-demo.js";
 
 const PASSWORD_SHA256 = "629ff2a8c079344a59c0a0f604cbf9ff9cf2bf6273638ec85a31171c7c784724";
@@ -90,6 +91,10 @@ export async function onRequest(context) {
   }
   if (path === "/albumsog") {
     return searchAlbums(context, url.searchParams.get("q") || "");
+  }
+  // People's pages, kept once found so they open at once on every device.
+  if (path === "/person") {
+    return handlePeople(context, request, url);
   }
   // Covers chosen by hand, kept in the same KV store as the wishlist.
   if (path === "/omslag") {
