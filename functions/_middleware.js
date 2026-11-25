@@ -9,7 +9,7 @@ import { findInfo, findCredits, findCover } from "../lib/nils-lookup.js";
 import searchCode from "../lib/nils-search.js";
 import { handleWishlist, searchAlbums } from "../lib/nils-onsker.js";
 import { handleCovers } from "../lib/nils-omslag.js";
-import { findPrice, handlePrices } from "../lib/nils-pris.js";
+import priser from "../data/priser.js";
 import { demoCollection, demoScript } from "../lib/nils-demo.js";
 
 const PASSWORD_SHA256 = "629ff2a8c079344a59c0a0f604cbf9ff9cf2bf6273638ec85a31171c7c784724";
@@ -94,12 +94,13 @@ export async function onRequest(context) {
   if (path === "/omslag") {
     return handleCovers(context, request);
   }
-  // Guide prices from Discogs (lib/nils-pris.js): one record looked up, and all prices found so far.
-  if (path === "/pris") {
-    return lookup(await findPrice(context, url.searchParams.get("a") || "", url.searchParams.get("b") || "", url.searchParams.get("y") || "", url.searchParams.get("m") || ""));
-  }
+  // Guide prices for the vinyl records, looked up on Discogs every week by a GitHub Action
+  // (tools/discogs-priser.mjs) and saved encrypted in data/priser.js.
   if (path === "/priser") {
-    return handlePrices(context, request);
+    const tag = `"${priser ? priser.iv : "ingen"}"`;
+    const headers = { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "private, no-cache", ETag: tag, "X-Robots-Tag": "noindex" };
+    if (request.headers.get("If-None-Match") === tag) return new Response(null, { status: 304, headers });
+    return new Response(priser ? `{"priser":${await decryptBox(priser, password)}}` : `{"priser":{}}`, { headers });
   }
   if (path === "/info") {
     return lookup(await findInfo(context, url.searchParams.get("a") || "", url.searchParams.get("b") || "", url.searchParams.get("y") || "", url.searchParams.get("m") || ""));
@@ -165,9 +166,14 @@ async function demo(context, url) {
 
 // The collection is gzipped JSON, encrypted with AES-GCM using a key made from the password.
 async function decryptCollection(password) {
+  return decryptBox(samling, password);
+}
+
+// Data saved gzipped and encrypted with a key made from the password (the collection, the prices).
+async function decryptBox(box, password) {
   const keyBytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("nils-samling:" + password));
   const key = await crypto.subtle.importKey("raw", keyBytes, "AES-GCM", false, ["decrypt"]);
-  const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: fromBase64(samling.iv) }, key, fromBase64(samling.data));
+  const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: fromBase64(box.iv) }, key, fromBase64(box.data));
   return new Response(new Blob([plain]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
 }
 
