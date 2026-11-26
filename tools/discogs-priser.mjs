@@ -19,7 +19,7 @@ import { gzipSync, gunzipSync } from "node:zlib";
 import { webcrypto as crypto } from "node:crypto";
 import samling from "../data/samling.js";
 import gemte from "../data/priser.js";
-import { lookUp, VERSION, MODEL_VERSION, WISH_VERSION } from "../lib/nils-pris.js";
+import { lookUp, estimate, byGrade, roundKr, VERSION, MODEL_VERSION, WISH_VERSION } from "../lib/nils-pris.js";
 import { wanted } from "../lib/nils-lookup.js";
 
 const password = process.env.NILS_KODE, token = process.env.DISCOGS_TOKEN;
@@ -67,10 +67,21 @@ const edOf = (r) => editions ? editions[keyOf(r)] || null : (prices[keyOf(r)] &&
 const pressing = (e) => JSON.stringify(e && (e.c || e.y) ? { c: e.c || "", y: e.y || "" } : null);
 const sameEd = (a, b) => pressing(a) === pressing(b);
 const old = (p) => !p || p.mv !== MODEL_VERSION || today - (p.t || 0) >= MARKET_DAYS;
+// A changed formula with market figures that are still fresh: worked out again here from the
+// saved figures, without asking Discogs (so a new formula takes seconds, not half an hour).
+let redone = 0;
+function revalue(k) {
+  const p = prices[k];
+  if (!p || !p.id || !p.mv || p.mv === MODEL_VERSION || today - (p.t || 0) >= MARKET_DAYS) return p;
+  const v = estimate(p);
+  prices[k] = Object.assign({}, p, { mv: MODEL_VERSION, ts: Date.now() }, v ? { p: roundKr(v), s: byGrade(v), k: "v" } : { p: null, s: undefined, k: "" });
+  redone++;
+  return prices[k];
+}
 
 const first = [], wishJobs = [], rest = [];
 for (const r of vinyl) {
-  const k = keyOf(r), p = prices[k], ed = edOf(r);
+  const k = keyOf(r), p = revalue(k), ed = edOf(r);
   const changed = !!p && !sameEd(p.ed, ed);
   const search = !p || p.v !== VERSION || changed || (!p.id && today - (p.t || 0) >= RETRY_DAYS);
   const market = !!p && !!p.id && old(p);
@@ -83,7 +94,7 @@ const wishes = (await fromSite("/onsker").then((d) => (d ? d.items || [] : null)
 const wishKeys = new Set();
 for (const w of wishes || []) {
   if (!w || !w.id || w.bought || w.format === "CD" || !(w.a || w.b)) continue;
-  const k = "ønske:" + w.id, q = w.a + "|" + w.b, p = prices[k];
+  const k = "ønske:" + w.id, q = w.a + "|" + w.b, p = revalue(k);
   wishKeys.add(k);
   const same = p && p.q === q && p.v === VERSION;
   if (!same || old(p) || p.all !== WISH_VERSION) wishJobs.push({ key: k, q, all: true, want: wanted(w.a, w.b, w.y || "", "LP"), ed: null, prev: same && p.id ? p : null });
@@ -98,7 +109,7 @@ if (sample > 0) {
   picked.slice(0, Math.min(5, Math.floor(sample / 8))).forEach((j) => { j.prev = null; });
   todo = [...first, ...wishJobs.slice(0, 2), ...picked];
 }
-console.log(`${vinyl.length} vinylplader og ${wishKeys.size} ønsker, ${todo.length} skal slås op (${first.length} ændret på siden).`);
+console.log(`${vinyl.length} vinylplader og ${wishKeys.size} ønsker, ${todo.length} skal slås op (${first.length} ændret på siden), ${redone} regnet om.`);
 
 const started = Date.now();
 let done = 0, found = 0, failed = 0, lastReport = 0, stopped = false;
