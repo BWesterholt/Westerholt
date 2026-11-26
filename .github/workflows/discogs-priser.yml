@@ -1,12 +1,22 @@
-# Looks up Discogs guide prices for the vinyl records and saves them in data/priser.js. Runs every
-# hour (and when started by hand under Actions > "Discogs-priser" > Run workflow), but only looks
-# up what is new, changed on the page (catalogue number, year), or older than 60 days.
+# Works out what the vinyl records are worth on Discogs and saves it in data/priser.js. Runs every
+# hour (and when started by hand under Actions > "Discogs-priser" > Run workflow, or by the page
+# when a catalogue number or year is saved), but only looks up what is new, changed on the page,
+# or older than 14 days. While it runs, the page shows its progress (only runs on main tell the page).
 # Needs two repository secrets: DISCOGS_TOKEN (personal Discogs token) and NILS_KODE (the
 # password of nils.westerholt.dk, which the collection and the prices are encrypted with).
 name: Discogs-priser
 
 on:
   workflow_dispatch:
+    inputs:
+      udgave:
+        description: "Sat af siden: den plade, der lige er ændret (krypteret)"
+        required: false
+        default: ""
+      stikprove:
+        description: "Kun til test: slå kun så mange plader op"
+        required: false
+        default: ""
   schedule:
     - cron: "17 * * * *"
 
@@ -14,7 +24,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: discogs-priser
+  group: discogs-priser-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -31,6 +41,9 @@ jobs:
           DISCOGS_TOKEN: ${{ secrets.DISCOGS_TOKEN }}
           NILS_KODE: ${{ secrets.NILS_KODE }}
           MAX_MINUTTER: "300"
+          SEND_TIL_SIDEN: ${{ github.ref == 'refs/heads/main' && '1' || '0' }}
+          UDGAVE: ${{ inputs.udgave }}
+          STIKPROVE: ${{ inputs.stikprove }}
         run: node tools/discogs-priser.mjs
       - name: Gem priserne
         run: |

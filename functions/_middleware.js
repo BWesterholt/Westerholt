@@ -11,6 +11,7 @@ import { handleWishlist, searchAlbums } from "../lib/nils-onsker.js";
 import { handleCovers } from "../lib/nils-omslag.js";
 import priser from "../data/priser.js";
 import { handleEditions } from "../lib/nils-udgaver.js";
+import { handlePrices } from "../lib/nils-priser.js";
 import { handlePeople } from "../lib/nils-personer.js";
 import { demoCollection, demoScript } from "../lib/nils-demo.js";
 
@@ -100,17 +101,15 @@ export async function onRequest(context) {
   if (path === "/omslag") {
     return handleCovers(context, request);
   }
-  // Guide prices for the vinyl records, looked up on Discogs every week by a GitHub Action
-  // (tools/discogs-priser.mjs) and saved encrypted in data/priser.js.
+  // What the vinyl records are worth, worked out from Discogs by a GitHub Action
+  // (tools/discogs-priser.mjs) and saved encrypted in data/priser.js; while a run is going it also
+  // sends its progress and new values here (lib/nils-priser.js).
   if (path === "/priser") {
-    const tag = `"${priser ? priser.iv : "ingen"}"`;
-    const headers = { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "private, no-cache", ETag: tag, "X-Robots-Tag": "noindex" };
-    if (request.headers.get("If-None-Match") === tag) return new Response(null, { status: 304, headers });
-    return new Response(priser ? `{"priser":${await decryptBox(priser, password)}}` : `{"priser":{}}`, { headers });
+    return handlePrices(context, request, url, { tag: priser ? priser.iv : "ingen", text: () => (priser ? decryptBox(priser, password) : "{}") });
   }
   // Your own copy's catalogue number and year, used by the price lookup.
   if (path === "/udgaver") {
-    return handleEditions(context, request);
+    return handleEditions(context, request, password);
   }
   if (path === "/info") {
     return lookup(await findInfo(context, url.searchParams.get("a") || "", url.searchParams.get("b") || "", url.searchParams.get("y") || "", url.searchParams.get("m") || ""));
