@@ -11,7 +11,7 @@ import { handleWishlist, searchAlbums } from "../lib/nils-onsker.js";
 import { handleCovers } from "../lib/nils-omslag.js";
 import priser from "../data/priser.js";
 import { handleEditions } from "../lib/nils-udgaver.js";
-import { readEdition } from "../lib/nils-udgavefelt.js";
+import { editionScript } from "../lib/nils-udgavefelt.js";
 import { handlePrices } from "../lib/nils-priser.js";
 import { handlePeople } from "../lib/nils-personer.js";
 import { demoCollection, demoPrices, demoScript } from "../lib/nils-demo.js";
@@ -182,7 +182,7 @@ async function demo(context, url) {
 
 // How the page reads the "Kat.nr." field while you type: the same function as the price run's
 // (lib/nils-udgavefelt.js), sent along as text.
-const editionCode = () => "var readEdition = (" + readEdition.toString() + ");";
+const editionCode = () => editionScript();
 
 // The collection is gzipped JSON, encrypted with AES-GCM using a key made from the password.
 async function decryptCollection(password) {
