@@ -88,9 +88,7 @@ for (const w of wishes || []) {
   const same = p && p.q === q && p.v === VERSION;
   if (!same || old(p) || p.all !== WISH_VERSION) wishJobs.push({ key: k, q, all: true, want: wanted(w.a, w.b, w.y || "", "LP"), ed: null, prev: same && p.id ? p : null });
 }
-// The wishes go last: each one checks up to 12 versions, so they are slow, and the progress bar
-// guesses the time left from the pace so far.
-let todo = [...first, ...rest, ...wishJobs];
+let todo = [...first, ...wishJobs, ...rest];
 // A test run (STIKPROVE=40): only that many records spread over the collection, two wishes, and
 // a few of them searched for from scratch, so every part is tried without a full run.
 const sample = Number(process.env.STIKPROVE || 0);
@@ -98,7 +96,7 @@ if (sample > 0) {
   const step = Math.max(1, Math.floor(rest.length / sample));
   const picked = rest.filter((_, i) => i % step === Math.floor(step / 2)).slice(0, sample);
   picked.slice(0, Math.min(5, Math.floor(sample / 8))).forEach((j) => { j.prev = null; });
-  todo = [...first, ...picked, ...wishJobs.slice(0, 2)];
+  todo = [...first, ...wishJobs.slice(0, 2), ...picked];
 }
 console.log(`${vinyl.length} vinylplader og ${wishKeys.size} ønsker, ${todo.length} skal slås op (${first.length} ændret på siden).`);
 
