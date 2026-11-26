@@ -12,7 +12,7 @@ import { handleCovers } from "../lib/nils-omslag.js";
 import priser from "../data/priser.js";
 import { handleEditions } from "../lib/nils-udgaver.js";
 import { handlePeople } from "../lib/nils-personer.js";
-import { demoCollection, demoScript } from "../lib/nils-demo.js";
+import { demoCollection, demoPrices, demoScript } from "../lib/nils-demo.js";
 
 const PASSWORD_SHA256 = "629ff2a8c079344a59c0a0f604cbf9ff9cf2bf6273638ec85a31171c7c784724";
 const COOKIE = "nils_adgang";
@@ -147,6 +147,9 @@ async function demo(context, url) {
   if (path === "/samling.json") {
     return new Response(demoCollection, { headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "public, max-age=300" } });
   }
+  if (path === "/priser") {
+    return new Response(demoPrices, { headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "public, max-age=300" } });
+  }
   if (path === "/albumsog") return searchAlbums(context, url.searchParams.get("q") || "");
   const p = (k) => url.searchParams.get(k) || "";
   if (path === "/info") return lookup(await findInfo(context, p("a"), p("b"), p("y"), p("m")));
@@ -164,6 +167,8 @@ async function demo(context, url) {
   return cachedPage(context.request, "demo", () => appPage
     .replace('<a class="logout" href="__BASE__/?log-ud">Log ud</a>', '')
     .replace('"Excel-ark fra " + versionDate(data.version) + ", lagt ind " + dkDate(data.loaded)', '"Eksempeldata med klassisk rock"')
+    // Made-up prices: saving a catalogue number starts no Discogs lookup here.
+    .replace('toast(moved ? (c || y ? "Gemt. Prisen for din udgave kommer inden for en time." : "Fjernet. Udgaven gættes igen inden for en time.") : "Gemt.")', 'toast(moved ? "Gemt. I demoen er priserne opdigtede, så prisen bliver den samme." : "Gemt.")')
     .replace('"Data: " + data.file + " · lagt ind " + dkDate(data.loaded)', '"Demo med eksempelplader. Den rigtige samling ligger bag et kodeord."')
     // No names in the demo: hide who wants what, and let anyone add or mark a record as bought.
     .replace('if (!d.who.length) return err("Vælg hvem der ønsker pladen.");', "")
