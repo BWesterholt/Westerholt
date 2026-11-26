@@ -11,6 +11,7 @@ import { handleWishlist, searchAlbums } from "../lib/nils-onsker.js";
 import { handleCovers } from "../lib/nils-omslag.js";
 import priser from "../data/priser.js";
 import { handleEditions } from "../lib/nils-udgaver.js";
+import { readEdition } from "../lib/nils-udgavefelt.js";
 import { handlePrices } from "../lib/nils-priser.js";
 import { handlePeople } from "../lib/nils-personer.js";
 import { demoCollection, demoPrices, demoScript } from "../lib/nils-demo.js";
@@ -136,7 +137,7 @@ export async function onRequest(context) {
   if (path !== "/") {
     return Response.redirect(new URL(base, url), 302);
   }
-  return cachedPage(request, "app" + prefix, () => appPage.replaceAll("__BASE__", prefix).replace("/*__SEARCH__*/", () => searchCode));
+  return cachedPage(request, "app" + prefix, () => appPage.replaceAll("__BASE__", prefix).replace("/*__SEARCH__*/", () => searchCode).replace("/*__UDGAVE__*/", editionCode));
 }
 
 // The demo: no password, a made-up collection, and a wishlist kept in the visitor's browser.
@@ -175,8 +176,13 @@ async function demo(context, url) {
     .replace("</head>", "<style>#wseg,#fwho,.flabel:has(+ #fwho){display:none !important}</style></head>")
     .replace("<head>", "<head>" + demoScript)
     .replaceAll("__BASE__", DEMO)
-    .replace("/*__SEARCH__*/", () => searchCode));
+    .replace("/*__SEARCH__*/", () => searchCode)
+    .replace("/*__UDGAVE__*/", editionCode));
 }
+
+// How the page reads the "Kat.nr." field while you type: the same function as the price run's
+// (lib/nils-udgavefelt.js), sent along as text.
+const editionCode = () => "var readEdition = (" + readEdition.toString() + ");";
 
 // The collection is gzipped JSON, encrypted with AES-GCM using a key made from the password.
 async function decryptCollection(password) {
