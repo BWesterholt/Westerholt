@@ -1,8 +1,9 @@
 // Checks how the "Kat.nr." field of a record is understood (lib/nils-udgavefelt.js), also in the
 // form the page gets it (as text). Run: node tools/test-udgavefelt.mjs
-import { readEdition } from "../lib/nils-udgavefelt.js";
+import { readEdition, editionScript } from "../lib/nils-udgavefelt.js";
 
-const onPage = new Function("return (" + readEdition.toString() + ");")();
+// The page's copy, as the page gets it (with no helpers from the build around it).
+const onPage = new Function(editionScript() + " return readEdition;")();
 let bad = 0;
 const short = (e) => {
   const o = {};
