@@ -3,8 +3,8 @@
 // because this repository is public). How the value is worked out: lib/nils-pris.js.
 //
 // Each record is only asked about again when it needs it:
-//   - the pressing is searched for once, and again when your own catalogue number or year is
-//     typed in on the page (those come first in the queue, so the page gets them quickly),
+//   - the pressing is searched for once, and again when your own "Kat.nr." field or year is
+//     changed on the page (those come first in the queue, so the page gets them quickly),
 //   - the market figures (cheapest for sale, how many) are asked again after 14 days: 1 request,
 //   - have/want and Discogs' suggestion change slowly and are asked every 90 days.
 // While it runs, it tells the website how far it has got and sends the new values along, so the
@@ -19,7 +19,7 @@ import { gzipSync, gunzipSync } from "node:zlib";
 import { webcrypto as crypto } from "node:crypto";
 import samling from "../data/samling.js";
 import gemte from "../data/priser.js";
-import { lookUp, estimate, byGrade, roundKr, VERSION, MODEL_VERSION, WISH_VERSION } from "../lib/nils-pris.js";
+import { lookUp, estimate, byGrade, roundKr, VERSION, MODEL_VERSION, WISH_VERSION, EDITION_VERSION } from "../lib/nils-pris.js";
 import { wanted } from "../lib/nils-lookup.js";
 
 const password = process.env.NILS_KODE, token = process.env.DISCOGS_TOKEN;
@@ -53,8 +53,9 @@ for (const [k, e] of Object.entries(liveOf(fromSiteNow))) {
 const editions = await fromSite("/udgaver").then((d) => (d ? d.udgaver || {} : null));
 // The page also sends the record that was just changed along with the start of the run (encrypted,
 // because the run's details are public): then it doesn't matter if the website's copy is a moment behind.
-const hint = await readHint(process.env.UDGAVE);
-if (hint && editions) {
+const hints = await readHint(process.env.UDGAVE);
+const hinted = new Set((hints || []).map((h) => h.k));
+for (const hint of (editions && hints) || []) {
   const e = Object.assign({}, editions[hint.k]);
   delete e.c; delete e.y;
   if (hint.c) e.c = hint.c;
@@ -82,12 +83,13 @@ function revalue(k) {
 const first = [], wishJobs = [], rest = [];
 for (const r of vinyl) {
   const k = keyOf(r), p = revalue(k), ed = edOf(r);
-  const changed = !!p && !sameEd(p.ed, ed);
+  // Changed on the page, or typed in before the field was read the way it is now.
+  const changed = !!p && (!sameEd(p.ed, ed) || (!!(ed && ed.c) && p.ev !== EDITION_VERSION));
   const search = !p || p.v !== VERSION || changed || (!p.id && today - (p.t || 0) >= RETRY_DAYS);
   const market = !!p && !!p.id && old(p);
   if (!search && !market) continue;
   const job = { key: k, want: wanted(r.a, r.b, r.y, /^(LP|MX)/.test(r.m || "") ? r.m : "LP"), ed, prev: search ? null : p };
-  (changed || (hint && hint.k === k) ? first : rest).push(job);
+  (changed || hinted.has(k) ? first : rest).push(job);
 }
 // The wishlist too (not CDs, not bought), so you know what a fair price is when shopping.
 const wishes = (await fromSite("/onsker").then((d) => (d ? d.items || [] : null))) || null;
@@ -172,14 +174,16 @@ async function report(end = false) {
 }
 
 // The record changed on the page, sent along when the page started the run: "iv.data", encrypted
-// with the collection's key. Gives { k: record key, c: catalogue number, y: year } or null.
+// with the collection's key. Gives [{ k: record key, c: the "Kat.nr." field, y: year }] or null
+// (one record from the page; a test run may send several).
 async function readHint(text) {
   if (!text || !/^[A-Za-z0-9+/=]+\.[A-Za-z0-9+/=]+$/.test(text)) return null;
   try {
     const [iv, data] = text.split(".");
     const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64(iv) }, key, b64(data));
     const h = JSON.parse(new TextDecoder().decode(plain));
-    return h && typeof h.k === "string" ? { k: h.k, c: String(h.c || ""), y: String(h.y || "") } : null;
+    const list = (Array.isArray(h) ? h : [h]).filter((x) => x && typeof x.k === "string").map((x) => ({ k: x.k, c: String(x.c || ""), y: String(x.y || "") }));
+    return list.length ? list : null;
   } catch (e) {
     return null;
   }
