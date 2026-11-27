@@ -16,6 +16,7 @@ import { editionScript } from "../lib/nils-udgavefelt.js";
 import { handlePrices } from "../lib/nils-priser.js";
 import { handlePeople } from "../lib/nils-personer.js";
 import { demoCollection, demoPrices, demoScript } from "../lib/nils-demo.js";
+import experimentPage from "../lib/nils-eksperiment.js";
 
 const PASSWORD_SHA256 = "629ff2a8c079344a59c0a0f604cbf9ff9cf2bf6273638ec85a31171c7c784724";
 const COOKIE = "nils_adgang";
@@ -32,8 +33,9 @@ export async function onRequest(context) {
     return new Response("Ikke fundet", { status: 404 });
   }
 
-  // The home screen icons for the Nils page are plain files, shown without the password.
-  if (url.pathname.startsWith("/nils-ikon/")) {
+  // The home screen icons for the Nils page are plain files, shown without the password. So is the
+  // code of the 3D record shop (nils-3d/): it holds no records, it reads them from the pages behind it.
+  if (url.pathname.startsWith("/nils-ikon/") || url.pathname.startsWith("/nils-3d/")) {
     return context.next();
   }
 
@@ -76,7 +78,7 @@ export async function onRequest(context) {
 
   const password = readCookie(request, COOKIE);
   if (!(await isCorrect(password))) {
-    if (path !== "/") return json({ fejl: "Ikke logget ind" }, 401);
+    if (path !== "/" && path !== "/eksperiment") return json({ fejl: "Ikke logget ind" }, 401);
     return page(loginPage(base, false));
   }
 
@@ -140,6 +142,15 @@ export async function onRequest(context) {
     if (!/^https:\/\/(itunes\.apple\.com\/search|api\.deezer\.com\/search)\?/.test(u)) return json({ fejl: "ukendt" }, 400);
     return passThrough(u, false);
   }
+  // The experiment zone: the collection as a record shop in 3D (lib/nils-eksperiment.js, nils-3d/).
+  if (path === "/eksperiment") {
+    return cachedPage(request, "eksperiment" + prefix, () => experimentPage.replaceAll("__BASE__", prefix));
+  }
+  // A cover picture passed on from the music catalogues, for browsers that may not draw it in 3D
+  // when it comes straight from the catalogue.
+  if (path === "/billede") {
+    return coverImage(url.searchParams.get("u") || "");
+  }
   if (path !== "/") {
     return Response.redirect(new URL(base, url), 302);
   }
@@ -172,6 +183,7 @@ async function demo(context, url) {
   if (path !== "/") return Response.redirect(new URL(DEMO, url), 302);
   return cachedPage(context.request, "demo", () => appPage
     .replace('<a class="logout" href="__BASE__/?log-ud">Log ud</a>', '')
+    .replace(/<a class="xzone[^"]*"[\s\S]*?<\/a>/g, "")
     .replace('"Excel-ark fra " + versionDate(data.version) + ", lagt ind " + dkDate(data.loaded)', '"Eksempeldata med klassisk rock"')
     // Made-up prices: saving a catalogue number starts no Discogs lookup here.
     .replace('toast(moved ? (c || y ? "Gemt. Prisen for din udgave kommer inden for en time." : "Fjernet. Udgaven gættes igen inden for en time.") : "Gemt.")', 'toast(moved ? "Gemt. I demoen er priserne opdigtede, så prisen bliver den samme." : "Gemt.")')
@@ -201,6 +213,16 @@ async function decryptBox(box, password) {
   const key = await crypto.subtle.importKey("raw", keyBytes, "AES-GCM", false, ["decrypt"]);
   const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: fromBase64(box.iv) }, key, fromBase64(box.data));
   return new Response(new Blob([plain]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
+}
+
+// Only covers from the catalogues the collection uses, kept by Cloudflare and the browser for a month.
+const COVER_HOSTS = /^https:\/\/([a-z0-9-]+\.)*(mzstatic\.com|dzcdn\.net|deezer\.com|coverartarchive\.org|archive\.org)\//;
+async function coverImage(target) {
+  if (!COVER_HOSTS.test(target)) return json({ fejl: "ukendt" }, 400);
+  const response = await fetch(target, { cf: { cacheTtl: 2592000, cacheEverything: true } }).catch(() => null);
+  const type = response && response.headers.get("Content-Type") || "";
+  if (!response || !response.ok || !/^image\//.test(type)) return new Response(null, { status: 404, headers: { "Cache-Control": "private, max-age=3600" } });
+  return new Response(response.body, { headers: { "Content-Type": type, "Cache-Control": "private, max-age=2592000", "X-Robots-Tag": "noindex" } });
 }
 
 // Forwards a lookup unchanged, without reading it, so it costs this server next to nothing.
