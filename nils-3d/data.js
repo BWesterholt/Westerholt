@@ -35,7 +35,7 @@ export async function loadCollection(progress) {
   records.forEach((r) => { if (!r.own) byLend[[r.a, r.b, r.y, r.m].join("|") + (r.copy > 1 ? "#" + r.copy : "")] = r; });
   for (const k in lent) { if (byLend[k]) byLend[k].lent = lent[k]; else if (lent[k]) left.push(lent[k]); }
   left.forEach((l) => { const r = records.find((x) => !x.own && !x.lent && x.a === l.a && x.b === l.b); if (r) r.lent = l; });
-  const priceMap = prices || {};
+  const priceMap = takePrices(prices);
   for (const r of records) {
     r.place = r.own || r.lent ? "Odense" : "Rødby";
     r.artist = displayArtist(r.a);
@@ -44,7 +44,11 @@ export async function loadCollection(progress) {
     if (r.t === "Vinyl" && p && p.p) { r.value = (p.s && p.s["VG+"]) || p.p; r.price = p; r.pressing = p.d || ""; }
     const c = chosen[r.key];
     const t = thumbs[r.key];
-    r.cover = c ? c.u : found[r.key] || (t && t.u && Date.now() - t.t < 30 * 864e5 ? t.u : t && !t.u && Date.now() - t.t < 3 * 864e5 ? "" : null);
+    // chosen by hand, else found by the search, else Discogs' photo of the pressing (saved by the
+    // price run), else what this browser found before; null: not looked for yet.
+    const dc = p && p.c ? p.c : "";
+    r.cover = c ? c.u : found[r.key] || (t && t.u && Date.now() - t.t < 30 * 864e5 ? t.u : dc || (t && !t.u && t.t > NEG_SINCE && Date.now() - t.t < 3 * 864e5 ? "" : null));
+    if (dc) r.discogsCover = dc;
     r.letter = letterOf(r);
     r.text = norm([r.a, r.artist, r.b, r.y, r.m, r.place].join(" "));
     r.seed = hash(r.key);
@@ -54,6 +58,19 @@ export async function loadCollection(progress) {
   const cds = records.filter((r) => r.t !== "Vinyl").sort(sorter);
   return { sheet, records, vinyl, cds, ownCount: mine.length, prices: priceMap, chosen, found, wishes: Object.keys(priceMap).filter((k) => /^ønske:/.test(k)).length };
 }
+
+// The values from the price run (data/priser.js), with the newer ones a run that is still going has
+// sent (as on the collection page).
+function takePrices(d) {
+  if (!d || !d.priser) return {};
+  const p = Object.assign({}, d.priser);
+  if (d.live) {
+    try { const l = JSON.parse(d.live).priser || {}; for (const k in l) if (!p[k] || (l[k].ts || 0) > (p[k].ts || 0)) p[k] = l[k]; } catch (e) {}
+  }
+  return p;
+}
+// Covers not found before the search got more places to look (Cover Art Archive) are looked for again.
+export const NEG_SINCE = Date.UTC(2026, 10, 27, 18);
 
 // Filed like the collection page: by the first letter, compilations ("ÅÅ ...") under "Div.".
 export function letterOf(r) {
@@ -92,7 +109,7 @@ function pump() {
         waiting.delete(r.key);
         if (!c || c.retry) { pauseUntil = Date.now() + 4000; job.resolve(null); pump(); return; }
         r.cover = c.url || "";
-        if (c.url) { newFound[r.key] = c.url; clearTimeout(foundTimer); foundTimer = setTimeout(sendFound, 8000); }
+        if (c.url) { newFound[r.key] = c.url; clearTimeout(foundTimer); if (Object.keys(newFound).length >= 250) sendFound(); else foundTimer = setTimeout(sendFound, 8000); }
         job.resolve(r.cover);
         pump();
       });
@@ -113,6 +130,26 @@ export function findInfo(rec) {
     infos.set(rec.key, get("/info?" + new URLSearchParams({ a: rec.a, b: rec.b, y: rec.y, m: rec.m })).then((d) => { if (!d || d.retry) infos.delete(rec.key); return d; }));
   }
   return infos.get(rec.key);
+}
+
+// The album on Spotify (its id), for Spotify's own player in the shop.
+const spots = new Map();
+export function findSpotify(rec) {
+  if (!spots.has(rec.key)) {
+    spots.set(rec.key, get("/spotify?" + new URLSearchParams({ a: rec.a, b: rec.b, y: rec.y, m: rec.m })).then(async (d) => {
+      if (d && d.retry && d.link) {
+        // The site couldn't ask Odesli (it only answers a few times a minute per address): ask it from here.
+        const o = await fetch("https://api.song.link/v1-alpha.1/links?" + new URLSearchParams({ url: d.link, userCountry: "DK" })).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+        const s = o && o.linksByPlatform && o.linksByPlatform.spotify;
+        const id = s && /open\.spotify\.com\/album\/([A-Za-z0-9]+)/.exec(s.url || "");
+        if (id) return { id: id[1], name: "spotify" };
+        if (o) return { id: null };
+      }
+      if (!d || d.retry) spots.delete(rec.key);
+      return d;
+    }));
+  }
+  return spots.get(rec.key);
 }
 
 // Short sound clips (30 seconds) from Deezer, else Apple Music, through the page's own address.

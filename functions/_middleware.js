@@ -5,7 +5,7 @@
 // and re-run tools/opdater-samling.py with the new password (the collection is encrypted with it).
 import samling from "../data/samling.js";
 import appPage from "../lib/nils-app.js";
-import { findInfo, findCredits, findCover } from "../lib/nils-lookup.js";
+import { findInfo, findCredits, findCover, findSpotify } from "../lib/nils-lookup.js";
 import searchCode from "../lib/nils-search.js";
 import { handleWishlist, searchAlbums } from "../lib/nils-onsker.js";
 import { handleCovers } from "../lib/nils-omslag.js";
@@ -126,6 +126,9 @@ export async function onRequest(context) {
   if (path === "/coversog") {
     return lookup(await findCover(context, url.searchParams.get("a") || "", url.searchParams.get("b") || "", url.searchParams.get("y") || "", url.searchParams.get("m") || ""));
   }
+  if (path === "/spotify") {
+    return lookup(await findSpotify(context, url.searchParams.get("a") || "", url.searchParams.get("b") || "", url.searchParams.get("y") || "", url.searchParams.get("m") || ""));
+  }
   if (path === "/medvirkende") {
     return lookup(await findCredits(context, url.searchParams.get("a") || "", url.searchParams.get("b") || "", url.searchParams.get("y") || "", url.searchParams.get("m") || ""));
   }
@@ -216,10 +219,10 @@ async function decryptBox(box, password) {
 }
 
 // Only covers from the catalogues the collection uses, kept by Cloudflare and the browser for a month.
-const COVER_HOSTS = /^https:\/\/([a-z0-9-]+\.)*(mzstatic\.com|dzcdn\.net|deezer\.com|coverartarchive\.org|archive\.org)\//;
+const COVER_HOSTS = /^https:\/\/([a-z0-9-]+\.)*(mzstatic\.com|dzcdn\.net|deezer\.com|coverartarchive\.org|archive\.org|discogs\.com)\//;
 async function coverImage(target) {
   if (!COVER_HOSTS.test(target)) return json({ fejl: "ukendt" }, 400);
-  const response = await fetch(target, { cf: { cacheTtl: 2592000, cacheEverything: true } }).catch(() => null);
+  const response = await fetch(target, { headers: { "User-Agent": "westerholt.dk-pladesamling/1.0 ( https://westerholt.dk )" }, cf: { cacheTtl: 2592000, cacheEverything: true } }).catch(() => null);
   const type = response && response.headers.get("Content-Type") || "";
   if (!response || !response.ok || !/^image\//.test(type)) return new Response(null, { status: 404, headers: { "Cache-Control": "private, max-age=3600" } });
   return new Response(response.body, { headers: { "Content-Type": type, "Cache-Control": "private, max-age=2592000", "X-Robots-Tag": "noindex" } });
