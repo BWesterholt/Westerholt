@@ -132,25 +132,81 @@ export function findInfo(rec) {
   return infos.get(rec.key);
 }
 
-// The album on Spotify (its id), for Spotify's own player in the shop.
+// The album on Spotify, for Spotify's own player in the shop. Asked in turn: the site (Deezer or
+// Apple Music, then Odesli), Odesli from this browser, and MusicBrainz from this browser (its
+// releases link to Spotify). Gives { id } for the album, { artist } when only the artist is on
+// Spotify, or { id: null }. Answers are remembered in this browser (found: 30 days, not: 2 days).
 const spots = new Map();
+let spotSaved = {};
+try { spotSaved = JSON.parse(localStorage.getItem("nils3d:spotify-ids")) || {}; } catch (e) {}
 export function findSpotify(rec) {
-  if (!spots.has(rec.key)) {
-    spots.set(rec.key, get("/spotify?" + new URLSearchParams({ a: rec.a, b: rec.b, y: rec.y, m: rec.m })).then(async (d) => {
-      if (d && d.retry && d.link) {
-        // The site couldn't ask Odesli (it only answers a few times a minute per address): ask it from here.
-        const o = await fetch("https://api.song.link/v1-alpha.1/links?" + new URLSearchParams({ url: d.link, userCountry: "DK" })).then((r) => (r.ok ? r.json() : null)).catch(() => null);
-        const s = o && o.linksByPlatform && o.linksByPlatform.spotify;
-        const id = s && /open\.spotify\.com\/album\/([A-Za-z0-9]+)/.exec(s.url || "");
-        if (id) return { id: id[1], name: "spotify" };
-        if (o) return { id: null };
-      }
-      if (!d || d.retry) spots.delete(rec.key);
-      return d;
-    }));
-  }
+  if (!spots.has(rec.key)) spots.set(rec.key, lookSpotify(rec).then((d) => { if (!d || d.retry) spots.delete(rec.key); return d; }));
   return spots.get(rec.key);
 }
+async function lookSpotify(rec) {
+  const old = spotSaved[rec.key];
+  if (old && Date.now() - old.t < (old.d.id || old.d.artist ? 30 : 2) * 864e5) return old.d;
+  const why = [];
+  const site = await get("/spotify?" + new URLSearchParams({ a: rec.a, b: rec.b, y: rec.y, m: rec.m }));
+  why.push("site:" + (!site ? "fejl" : site.id ? "ok" : site.why || (site.retry ? "prøv igen" : "ingen")));
+  let found = site && site.id ? site : null;
+  if (!found && site && site.link) {
+    // The site couldn't ask Odesli (it only answers a few times a minute per address): ask it from here.
+    const o = await fetch("https://api.song.link/v1-alpha.1/links?" + new URLSearchParams({ url: site.link, userCountry: "DK" })).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+    const id = o && spotifyId(o.linksByPlatform && o.linksByPlatform.spotify && o.linksByPlatform.spotify.url, "album");
+    why.push("odesli:" + (id ? "ok" : o ? "ingen" : "fejl"));
+    if (id) found = { id, name: "spotify" };
+  }
+  let mbFailed = false;
+  if (!found) found = await spotifyFromBrainz(rec, why).catch((e) => { mbFailed = true; why.push("mb:fejl " + e.message); return null; });
+  const d = found || { id: null, retry: mbFailed && !!(site && site.retry) };
+  d.why = why.join(", ");
+  if (!d.retry) { spotSaved[rec.key] = { d, t: Date.now() }; try { localStorage.setItem("nils3d:spotify-ids", JSON.stringify(spotSaved)); } catch (e) {} }
+  return d;
+}
+const SPOTIFY = /open\.spotify\.com\/(?:intl-[a-z]+\/)?(album|artist)\/([A-Za-z0-9]{10,})/;
+function spotifyId(url, kind) { const m = SPOTIFY.exec(url || ""); return m && m[1] === kind ? m[2] : null; }
+function spotifyIn(relations, kind) { for (const x of relations || []) { const id = x.url && spotifyId(x.url.resource, kind); if (id) return id; } return null; }
+// MusicBrainz allows about one question a second.
+let mbNext = 0;
+async function brainz(path) {
+  const wait = mbNext - Date.now();
+  mbNext = Math.max(Date.now(), mbNext) + 1100;
+  if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+  const r = await fetch("https://musicbrainz.org/ws/2/" + path + (path.indexOf("?") < 0 ? "?" : "&") + "fmt=json", { headers: { Accept: "application/json" } });
+  if (!r.ok) throw new Error(String(r.status));
+  return r.json();
+}
+const lucene = (t) => String(t).replace(/[\\+\-!(){}\[\]^"~*?:\/]|&&|\|\|/g, " ").replace(/\s+/g, " ").trim();
+async function spotifyFromBrainz(rec, why) {
+  const name = rec.artist === "Diverse kunstnere" ? "" : rec.artist;
+  const title = cleanTitle(rec.b);
+  if (!title) return null;
+  const q = 'release:"' + lucene(title) + '"' + (name ? ' AND artist:"' + lucene(name) + '"' : "");
+  const res = await brainz("release?limit=25&query=" + encodeURIComponent(q));
+  // the digital releases first: those are the ones with links to the streaming services
+  const digital = (r) => ((r.media || []).some((m) => /digital/i.test(m.format || "")) ? 1 : 0);
+  const list = (res.releases || []).filter((r) => r.score >= 80 && same(r.title, title)).sort((a, b) => digital(b) - digital(a) || b.score - a.score);
+  for (const r of list.slice(0, 4)) {
+    const full = await brainz("release/" + r.id + "?inc=url-rels");
+    const id = spotifyIn(full.relations, "album");
+    if (id) { why.push("mb:ok"); return { id, name: "spotify" }; }
+  }
+  // Not the album: the artist, so you still hear whole songs by them.
+  if (name) {
+    const a = await brainz("artist?limit=3&query=" + encodeURIComponent('artist:"' + lucene(name) + '"'));
+    const best = (a.artists || []).find((x) => x.score >= 90 && same(x.name, name));
+    if (best) {
+      const full = await brainz("artist/" + best.id + "?inc=url-rels");
+      const id = spotifyIn(full.relations, "artist");
+      if (id) { why.push("mb:kunstner"); return { id: null, artist: id, name: "spotify" }; }
+    }
+  }
+  why.push("mb:ingen (" + list.length + " udgaver)");
+  return null;
+}
+const cleanTitle = (b) => String(b).replace(/\(.*?\)|\[.*?\]/g, " ").split(" - ")[0].replace(/\s+/g, " ").trim();
+function same(x, y) { x = norm(x); y = norm(y); return !!(x && y && (x === y || x.indexOf(y) === 0 || y.indexOf(x) === 0)); }
 
 // Short sound clips (30 seconds) from Deezer, else Apple Music, through the page's own address.
 export async function findPreviews(rec) {
