@@ -96,7 +96,7 @@ export class CdWall {
     sign.rotation.y = Math.PI / 2; sign.position.set(ROOM.x0 + 0.05, Y0 + ROWS * ROW_H + 0.42, zMid);
     this.group.add(sign);
     this.sign = sign;
-    this.light = new THREE.PointLight(0xfff0dc, 0, 5.5, 2); this.light.position.set(ROOM.x0 + 1.3, 2.55, zMid); this.group.add(this.light);
+    this.light = new THREE.PointLight(0xfff0dc, 0, 5.5, 2); this.light.position.set(ROOM.x0 + 1.7, 2.45, zMid); this.group.add(this.light);
     this.signLight = new THREE.PointLight(0x4fb8ff, 0, 3, 2); this.signLight.position.set(ROOM.x0 + 0.5, Y0 + ROWS * ROW_H + 0.35, zMid); this.group.add(this.signLight);
     // something to tap
     const proxy = new THREE.Mesh(new THREE.BoxGeometry(0.5, ROWS * ROW_H + 0.1, LEN + 0.1), new THREE.MeshBasicMaterial({ visible: false }));

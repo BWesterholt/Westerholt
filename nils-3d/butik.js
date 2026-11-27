@@ -274,7 +274,7 @@ function applyLights(t) {
   room.lights.wall.intensity = L.wall * 30;
   room.cones3d[0].mat.uniforms.uStrength.value = room.cones3d[0].max * L.pend;
   room.cones3d[1].mat.uniforms.uStrength.value = room.cones3d[1].max * L.wall;
-  cdwall.light.intensity = L.cd * 7;
+  cdwall.light.intensity = L.cd * 3.2;
   cdwall.sign.material.color.setScalar(L.cd * 3 * (1 + lv.mid * 0.4));
   cdwall.signLight.intensity = L.cd * 1.6;
   room.portal.mat.uniforms.uOn.value = L.portal;
@@ -408,6 +408,7 @@ function loop(now) {
     room.dust.mat.uniforms.uTime.value = t;
     room.dust.mat.uniforms.uBeat.value = lv.on ? lv.bass : 0;
     room.portal.mat.uniforms.uTime.value = t;
+    room.passers.update(dt);
     applyLights(t);
   }
   if (playing && lv.on) updateNow();
@@ -795,7 +796,7 @@ async function inspectFrom(src) {
     disc.rotation.x = Math.PI / 2;
     disc.position.set(0, 0.002, 0);
     obj.add(disc);
-    if (src.source === "crate") { const w = crates.worldOf(src.item); start = w; crates.setOut(src.item, true); }
+    if (src.source === "crate") { await crates.settle(); const w = crates.worldOf(src.item); start = w; crates.setOut(src.item, true); }
     else { src.object.updateMatrixWorld(); src.object.matrixWorld.decompose(start.pos, start.quat, new V3()); src.object.visible = false; }
     findInfo(rec).then((info) => {
       if (!inspect || inspect.rec !== rec) return;
@@ -1281,4 +1282,4 @@ function updateTimeHud() {
   c.addEventListener("pointerup", off); c.addEventListener("pointercancel", off);
 }
 
-window.__butik = { get mode() { return mode; }, get tunnel() { return tunnel; }, exitPortal, timeFind, timeFocus, timeUnfocus, crates: () => crates, cdwall: () => cdwall, goTo: (i, o) => goTo(data.records[i], o), data: () => data, camera, scene, renderer, sound, walk, openCrate, openCd, take, playInspected, flipInspected, putBack, goBack, dig, enterPortal, get inspect() { return inspect; }, get playing() { return playing; }, tap: onTap };
+window.__butik = { get mode() { return mode; }, get tunnel() { return tunnel; }, get room() { return room; }, exitPortal, timeFind, timeFocus, timeUnfocus, crates: () => crates, cdwall: () => cdwall, goTo: (i, o) => goTo(data.records[i], o), data: () => data, camera, scene, renderer, sound, walk, openCrate, openCd, take, playInspected, flipInspected, putBack, goBack, dig, enterPortal, get inspect() { return inspect; }, get playing() { return playing; }, tap: onTap };

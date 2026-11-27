@@ -15,6 +15,7 @@ const DIV_W = 0.33, DIV_H = 0.37;
 // A little air between the records, so the small random turn of each one never makes two of them
 // go through each other.
 const GAP = 0.0011;
+const FLIP = 0.016; // seconds per record when the pile catches up with a jump
 const ROW_X = 1.5, ROW_MID_Z = 0.55;
 
 // Which records go in which crate: whole letters where they fit, big letters split evenly.
@@ -94,6 +95,7 @@ export class Crates {
     this.crates = crates;
     this.coverSize = coverSize;
     this.mobile = mobile;
+    this.waiting = [];
     this.group = new THREE.Group();
     scene.add(this.group);
     this.active = null;
@@ -293,6 +295,7 @@ export class Crates {
       this.hide(it);
     });
     this.sleeves.instanceMatrix.needsUpdate = true;
+    c.shown = c.cursor; c.target = c.pose; c.stepT = 0;
     this.setCursor(at === undefined ? c.cursor : at);
   }
   // The front record was drawn small; dig mode wants it sharp.
@@ -317,7 +320,9 @@ export class Crates {
     if (!c) return;
     j = clamp(Math.round(j), 0, c.items.length);
     c.cursor = j;
-    c.target = solve(c, j);
+    // the pile itself follows one record per frame (see update), so a long jump flips through
+    // the records instead of sweeping them through each other
+    if (c.shown === undefined || !c.target) { c.shown = j; c.target = solve(c, j); }
     // covers for the records around the cursor, nearest first
     for (let d = -3; d <= 10; d++) {
       const it = c.items[j + d];
@@ -359,22 +364,38 @@ export class Crates {
     if (!c || !c.target) return false;
     let moving = false;
     const n = c.items.length;
+    if (c.shown !== c.cursor) {
+      // at most one record per frame: two at once let them pass through each other
+      c.stepT += dt;
+      if (c.stepT >= FLIP) { c.stepT = Math.min(c.stepT - FLIP, FLIP); c.shown += Math.sign(c.cursor - c.shown); c.target = solve(c, c.shown); }
+      moving = true;
+    } else c.stepT = 0;
     for (let j = 0; j < n; j++) {
       const st = c.state[j], tg = c.target[j], it = c.items[j];
       // records near the cursor move first, the rest a moment later, like a wave
-      const omega = 20 - Math.min(3, Math.abs(j - c.cursor) * 0.3);
+      const omega = 20 - Math.min(3, Math.abs(j - c.shown) * 0.3);
       [st.th, st.vt] = spring(st.th, st.vt, tg.th, omega, dt);
       [st.s, st.vs] = spring(st.s, st.vs, tg.s, omega, dt);
       if (Math.abs(st.th - tg.th) > 0.0005 || Math.abs(st.s - tg.s) > 0.00005 || Math.abs(st.vt) > 0.001) moving = true;
       let lift = 0;
-      if (j === c.cursor && this.lift) lift = this.lift;
+      if (j === c.cursor && c.shown === c.cursor && this.lift) lift = this.lift;
       const target = it.rec ? it.hero && it.hero.matrix : it.mesh.matrix;
       if (!target) continue;
       itemMatrix(c.obj, it, st.s + lift * 0.1, st.th, it.rec ? LP.h : DIV_H, target);
       if (lift && j === c.cursor) { _o.makeTranslation(0, lift, 0); target.premultiply(_o); }
       (it.rec ? it.hero : it.mesh).matrixWorldNeedsUpdate = true;
     }
+    if (this.waiting.length && c.shown === c.cursor) {
+      const st = c.state[c.cursor], tg = c.target[c.cursor];
+      if (!st || (Math.abs(st.th - tg.th) < 0.01 && Math.abs(st.s - tg.s) < 0.001)) { const w = this.waiting; this.waiting = []; w.forEach((f) => f()); }
+    }
     return moving;
+  }
+  // Resolves when the pile has caught up with the cursor (or at once when no crate is open).
+  settle() {
+    const c = this.active;
+    if (!c || c.shown === c.cursor) return Promise.resolve();
+    return new Promise((res) => { this.waiting.push(res); setTimeout(res, 2500); });
   }
 
   // The world position and rotation of an item as it stands now.

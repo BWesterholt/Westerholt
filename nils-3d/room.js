@@ -70,6 +70,7 @@ export function buildRoom(scene, { mobile = false, tables = [] } = {}) {
   street.position.set(-1, 2.2, R.z1 + 3.2); street.rotation.y = Math.PI;
   const sidewalk = add(new THREE.Mesh(new THREE.PlaneGeometry(16, 3.2), new THREE.MeshStandardMaterial({ color: 0x8d8a84, roughness: 0.8, metalness: 0 })));
   sidewalk.rotation.x = -Math.PI / 2; sidewalk.position.set(-1, -0.02, R.z1 + 1.6);
+  room.passers = passers(add, R, mobile);
   // gold letters on the window, seen from inside (mirrored), and the blue "ÅBEN" neon
   {
     const c = T.canvas(2048, 256), g = c.getContext("2d");
@@ -360,4 +361,41 @@ export function hangingSign(scene, text, sub, x, z, rotY) {
   const wire = new THREE.MeshStandardMaterial({ color: 0x222222 });
   for (const dx of [-0.4, 0.4]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.002, 0.002, 0.7, 4), wire); w.position.set(dx, 0.5, 0); grp.add(w); }
   return grp;
+}
+
+// People going past on the pavement outside, one now and then: walkers, someone with a dog,
+// a cyclist. Flat figures in two steps of a walk, behind the glass.
+function passers(add, R, mobile) {
+  const kinds = [
+    { draw: "walker", coat: "#8a4f3c", trousers: "#2f3440", hair: "#3b2a20", w: 0.7, h: 1.78, speed: 1.3 },
+    { draw: "bike", coat: "#3f6f8f", trousers: "#2b2b33", hair: "#c9a06a", frame: "#b03a2e", w: 1.75, h: 1.72, speed: 4.4 },
+    { draw: "walker", coat: "#d1a64a", trousers: "#44403c", hair: "#6b4226", skin: "#c98f6a", dog: "#b07a42", w: 1.65, h: 1.68, speed: 1.15 },
+    { draw: "walker", coat: "#5c7a5a", trousers: "#2a2a30", hair: "#1f1a18", bag: "#c86b3c", w: 0.7, h: 1.74, speed: 1.4 },
+  ];
+  const list = kinds.slice(0, mobile ? 3 : 4).map((k, i) => {
+    const tex = T.passer(k);
+    const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, color: 0xe6e1d8 });
+    const m = add(new THREE.Mesh(new THREE.PlaneGeometry(k.w, k.h), mat));
+    m.rotation.y = Math.PI; m.visible = false;
+    return { m, k, tex, x: 0, dir: 1, z: R.z1 + 0.9 + (i % 2) * 1.1, wait: 2 + i * 6.5, t: 0 };
+  });
+  return {
+    list,
+    update(dt) {
+      for (const p of list) {
+        if (p.wait > 0) {
+          p.wait -= dt;
+          if (p.wait <= 0) { p.dir = Math.random() < 0.5 ? 1 : -1; p.x = p.dir > 0 ? -8.5 : 6.5; p.t = 0; p.m.visible = true; p.m.scale.x = -p.dir; }
+          continue;
+        }
+        p.t += dt;
+        p.x += p.dir * p.k.speed * dt;
+        const steps = p.k.draw === "bike" ? 2.2 : p.k.speed * 1.6;
+        p.tex.offset.x = Math.floor(p.t * steps * 2) % 2 ? 0.5 : 0;
+        const bob = p.k.draw === "bike" ? 0 : Math.abs(Math.sin(p.t * steps * Math.PI)) * 0.025;
+        p.m.position.set(p.x, p.k.h / 2 + bob, p.z);
+        if (p.x > 7 || p.x < -9) { p.m.visible = false; p.wait = 6 + Math.random() * 16; }
+      }
+    },
+  };
 }

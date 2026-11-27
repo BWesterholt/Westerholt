@@ -540,3 +540,69 @@ export function portalSign() {
   g.font = `500 36px ${FONT}`; g.fillStyle = "#C8A25A"; g.fillText("Flyv gennem årtierne  →", W / 2, H * 0.76);
   return texture(c);
 }
+
+// Someone going past outside the window, in two steps of a walk (left and right half of the
+// picture). Drawn simply and a little soft, as seen through the glass. The figure faces right.
+// kind: { draw: "walker" | "bike", coat, trousers, hair, skin, bag, dog, w (metres), h (metres) }
+const shade = (hex, f) => { const n = parseInt(hex.slice(1), 16); return `rgb(${((n >> 16) & 255) * f | 0},${((n >> 8) & 255) * f | 0},${(n & 255) * f | 0})`; };
+export function passer(k) {
+  const PX = 300; // pixels per metre
+  const FW = Math.round(k.w * PX), FH = Math.round(k.h * PX);
+  const c = canvas(FW * 2, FH), g = c.getContext("2d");
+  const skin = k.skin || "#e0b48f", hair = k.hair || "#3b2a20", trousers = k.trousers || "#3a3a44";
+  const line = (x0, y0, x1, y1, w, col) => { g.strokeStyle = col; g.lineWidth = w; g.lineCap = "round"; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke(); };
+  for (let f = 0; f < 2; f++) {
+    g.save();
+    g.translate(f * FW, 0);
+    g.filter = "blur(1.2px)";
+    const ground = FH - 6, m = PX; // m: one metre in pixels
+    if (k.draw === "bike") {
+      const r = 0.33 * m, bx = FW * 0.5, wy = ground - r, w0 = bx - 0.52 * m, w1 = bx + 0.52 * m;
+      for (const wx of [w0, w1]) { g.strokeStyle = "#2a2a2e"; g.lineWidth = 7; g.beginPath(); g.arc(wx, wy, r, 0, Math.PI * 2); g.stroke(); g.lineWidth = 1.5; g.strokeStyle = "rgba(60,60,66,.6)"; for (let s = 0; s < 8; s++) { const a = (s / 8) * Math.PI + f * 0.2; line(wx - Math.cos(a) * r, wy - Math.sin(a) * r, wx + Math.cos(a) * r, wy + Math.sin(a) * r, 1.5, "rgba(60,60,66,.55)"); } }
+      const crank = [bx - 0.02 * m, wy], seat = [bx - 0.18 * m, wy - 0.55 * m], bar = [bx + 0.36 * m, wy - 0.62 * m];
+      const frame = k.frame || "#b03a2e";
+      line(w0, wy, crank[0], crank[1], 6, frame); line(crank[0], crank[1], seat[0], seat[1], 6, frame); line(seat[0], seat[1] + 0.08 * m, bar[0] - 0.04 * m, bar[1] + 0.1 * m, 6, frame); line(crank[0], crank[1], bar[0] - 0.04 * m, bar[1] + 0.1 * m, 6, frame); line(bar[0] - 0.04 * m, bar[1] + 0.1 * m, w1, wy, 6, frame); line(w0, wy, seat[0], seat[1] + 0.08 * m, 5, frame);
+      line(bar[0] - 0.04 * m, bar[1] + 0.1 * m, bar[0], bar[1], 5, "#2a2a2e"); line(bar[0], bar[1], bar[0] + 0.1 * m, bar[1] + 0.02 * m, 6, "#2a2a2e");
+      // the rider: pedals in two positions
+      const hip = [seat[0], seat[1] - 0.06 * m], ped = f ? [[crank[0] + 0.16 * m, crank[1] + 0.05 * m], [crank[0] - 0.16 * m, crank[1] - 0.05 * m]] : [[crank[0], crank[1] + 0.17 * m], [crank[0], crank[1] - 0.17 * m]];
+      for (const [i, p] of ped.entries()) { const knee = [hip[0] + 0.3 * m, hip[1] + 0.12 * m + (p[1] - crank[1]) * 0.5]; line(hip[0], hip[1], knee[0], knee[1], 15, i ? "rgba(40,40,48,1)" : trousers); line(knee[0], knee[1], p[0], p[1], 13, i ? "rgba(40,40,48,1)" : trousers); }
+      const sh = [hip[0] + 0.24 * m, hip[1] - 0.5 * m];
+      line(hip[0], hip[1], sh[0], sh[1], 34, k.coat); line(sh[0], sh[1] + 6, bar[0], bar[1], 11, k.coat);
+      g.fillStyle = skin; g.beginPath(); g.arc(sh[0] + 0.08 * m, sh[1] - 0.14 * m, 0.1 * m, 0, Math.PI * 2); g.fill();
+      g.fillStyle = hair; g.beginPath(); g.arc(sh[0] + 0.06 * m, sh[1] - 0.17 * m, 0.1 * m, Math.PI * 0.95, Math.PI * 2.05); g.fill();
+    } else {
+      const x = (k.dog ? 0.3 : 0.5) * FW, hipY = ground - 0.88 * m, shY = ground - 1.38 * m, headY = ground - 1.53 * m;
+      const arm = shade(k.coat, 0.72);
+      const stride = f ? 0.2 * m : 0.06 * m;
+      // legs and shoes, the far one a little darker
+      for (const [i, s] of [[1, -stride], [0, stride]]) { const col = i ? "rgba(30,30,36,1)" : trousers; line(x, hipY, x + s, ground - 0.05 * m, 15, col); g.fillStyle = "#2b2420"; g.beginPath(); g.ellipse(x + s + 6, ground - 0.03 * m, 13, 7, 0, 0, Math.PI * 2); g.fill(); }
+      // coat
+      g.fillStyle = k.coat; g.beginPath(); g.roundRect(x - 0.16 * m, shY, 0.32 * m, hipY - shY + 0.12 * m, 0.08 * m); g.fill();
+      // arms swing with the legs
+      const swing = f ? 0.15 * m : 0.04 * m;
+      line(x + 0.02 * m, shY - 0.06 * m, x + 0.02 * m, shY + 0.02 * m, 13, skin);
+      line(x, shY + 0.05 * m, x - swing, hipY + 0.02 * m, 12, arm);
+      if (k.bag) { line(x, shY + 0.05 * m, x + swing * 0.4, hipY + 0.04 * m, 12, arm); g.fillStyle = k.bag; g.beginPath(); g.roundRect(x + swing * 0.4 - 0.1 * m, hipY, 0.2 * m, 0.24 * m, 6); g.fill(); line(x + swing * 0.4 - 0.05 * m, hipY + 2, x + swing * 0.4, hipY - 0.06 * m, 3, k.bag); }
+      else line(x, shY + 0.05 * m, x + swing, hipY + 0.02 * m, 12, arm);
+      g.fillStyle = skin; g.beginPath(); g.arc(x + 0.02 * m, headY, 0.11 * m, 0, Math.PI * 2); g.fill();
+      g.fillStyle = hair; g.beginPath(); g.arc(x, headY - 0.02 * m, 0.115 * m, Math.PI * 0.9, Math.PI * 2.1); g.fill();
+      if (k.dog) {
+        // a big friendly dog on a lead
+        const dx = x + 0.6 * m, dy = ground - 0.5 * m;
+        line(x + swing, hipY + 0.02 * m, dx + 0.22 * m, dy - 0.12 * m, 2.5, "#5a3a24");
+        const ds = f ? 0.08 * m : 0.015 * m, dark = shade(k.dog, 0.75);
+        for (const lx of [dx - 0.2 * m, dx + 0.19 * m]) { line(lx, dy, lx - ds, ground - 0.02 * m, 10, dark); line(lx, dy, lx + ds, ground - 0.02 * m, 10, k.dog); }
+        g.fillStyle = k.dog; g.beginPath(); g.ellipse(dx, dy, 0.3 * m, 0.12 * m, 0, 0, Math.PI * 2); g.fill();
+        line(dx + 0.24 * m, dy - 0.04 * m, dx + 0.3 * m, dy - 0.18 * m, 16, k.dog);
+        g.beginPath(); g.ellipse(dx + 0.33 * m, dy - 0.22 * m, 0.1 * m, 0.075 * m, 0.2, 0, Math.PI * 2); g.fill();
+        g.beginPath(); g.ellipse(dx + 0.42 * m, dy - 0.19 * m, 0.06 * m, 0.04 * m, 0.25, 0, Math.PI * 2); g.fill();
+        g.fillStyle = dark; g.beginPath(); g.ellipse(dx + 0.29 * m, dy - 0.2 * m, 0.035 * m, 0.07 * m, 0.3, 0, Math.PI * 2); g.fill();
+        line(dx - 0.28 * m, dy - 0.03 * m, dx - 0.4 * m, dy - 0.16 * m + (f ? 0.03 * m : 0), 7, k.dog);
+      }
+    }
+    g.restore();
+  }
+  const t = texture(c);
+  t.repeat.set(0.5, 1);
+  return t;
+}

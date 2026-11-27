@@ -9,6 +9,7 @@ import { clamp, lerp, spring, smoothstep, num, hash, rng } from "./util.js";
 
 export const YEAR = 1.7; // metres of tunnel per year
 const R = 2.05; // radius of the tunnel
+const LOOK = 2.6; // how far ahead the year you are looking at begins (jumpTo stops 2.2 before a year)
 const SIZE = 0.36; // size of a record in the tunnel
 const START = 4.5; // where you start, in front of the first year
 
@@ -195,7 +196,8 @@ export class TimeTunnel {
   }
 
   zOf(y) { return -(y - this.y0) * YEAR; }
-  yearAt(z) { return clamp(Math.floor(this.y0 + (-(z - 0.8)) / YEAR), this.y0, this.y1); }
+  // The year you are looking at: the records at the edges of the screen are a couple of metres ahead.
+  yearAt(z) { return clamp(Math.floor(this.y0 + (LOOK - z) / YEAR), this.y0, this.y1); }
   length() { return (this.y1 - this.y0 + 1) * YEAR; }
   minZ() { return this.zOf(this.y1 + 1) + 1.2; }
   maxZ() { return START; }
@@ -305,7 +307,7 @@ export class TimeTunnel {
     const camZ = camera.position.z;
     const y = this.yearAt(camZ);
     // colours of the decade you are in, blended into the next one
-    const fy = this.y0 + (-(camZ - 0.8)) / YEAR;
+    const fy = this.y0 + (LOOK - camZ) / YEAR;
     const d0 = decadeOf(Math.floor(fy)), into = clamp((fy - Math.floor(fy / 10) * 10 - 8) / 2, 0, 1);
     const d1 = decadeOf(Math.floor(fy) + 10 - (Math.floor(fy) % 10));
     const a = DECADES[d0], b = DECADES[d1] || a;
@@ -323,7 +325,8 @@ export class TimeTunnel {
       l.mesh.visible = l.mat.opacity > 0.01;
     }
     this.updateHeroes(camZ);
-    this.year = y;
+    // a record you have picked out shows its own year
+    this.year = this.selected ? this.selected.year : y;
     return busy;
   }
 
