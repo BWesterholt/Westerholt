@@ -33,7 +33,7 @@ export function floorboards() {
     const startY = y;
     while (y < startY + H) {
       const len = 520 + rand() * 640;
-      const hue = 25 + rand() * 8, sat = 22 + rand() * 12, lig = 19 + rand() * 11;
+      const hue = 27 + rand() * 8, sat = 30 + rand() * 12, lig = 27 + rand() * 11;
       for (const off of [0, -H, H]) {
         const yy = y + off;
         if (yy > H || yy + len < 0) continue;
@@ -98,9 +98,9 @@ export function bricks({ paint = null } = {}) {
     }
   }
   for (let k = 0; k < 9000; k++) { const v = rand() * 255 | 0; q.fillStyle = `rgba(${v},${v},${v},.12)`; q.fillRect(rand() * S, rand() * S, 2, 2); }
-  // soot and age, darker near the floor
+  // soot and age, darker near the floor (only a little on painted bricks)
   const age = g.createLinearGradient(0, 0, 0, S);
-  age.addColorStop(0, "rgba(10,6,4,.12)"); age.addColorStop(1, "rgba(20,10,5,.28)");
+  age.addColorStop(0, paint ? "rgba(60,40,20,.03)" : "rgba(10,6,4,.12)"); age.addColorStop(1, paint ? "rgba(60,40,20,.1)" : "rgba(20,10,5,.28)");
   g.fillStyle = age; g.fillRect(0, 0, S, S);
   return { map: texture(c, { repeat: [1, 1] }), bump: texture(b, { srgb: false, repeat: [1, 1] }) };
 }
@@ -401,6 +401,47 @@ export function softDot(S = 64, inner = "rgba(255,240,220,1)") {
   return texture(c, { mips: false });
 }
 
+// The street outside the window on a bright day: town houses in warm colours, white window
+// frames, a couple of trees, all a little out of focus.
+export function dayStreet() {
+  const W = 1024, H = 512, c = canvas(W, H), g = c.getContext("2d"), rand = rng(23);
+  const sky = g.createLinearGradient(0, 0, 0, H * 0.6);
+  sky.addColorStop(0, "#9fc3e6"); sky.addColorStop(1, "#eaf0f2");
+  g.fillStyle = sky; g.fillRect(0, 0, W, H);
+  for (let i = 0; i < 14; i++) {
+    const x = rand() * W, y = rand() * H * 0.25, r = 30 + rand() * 70;
+    const gr = g.createRadialGradient(x, y, 0, x, y, r);
+    gr.addColorStop(0, "rgba(255,255,255,.55)"); gr.addColorStop(1, "rgba(255,255,255,0)");
+    g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2);
+  }
+  const cols = ["#d9a066", "#e6c98f", "#c97b5a", "#9fb29a", "#e3d3b8", "#b8a07a", "#d98e73", "#f0e2c4"];
+  const ground = H * 0.66;
+  for (let x = -20; x < W;) {
+    const w = 120 + rand() * 150, h = 170 + rand() * 120, top = ground - h;
+    g.fillStyle = cols[Math.floor(rand() * cols.length)]; g.fillRect(x, top, w, h + 40);
+    g.fillStyle = rand() < 0.5 ? "#7a3f2e" : "#55535a";
+    g.beginPath(); g.moveTo(x - 4, top); g.lineTo(x + w * 0.5, top - 26 - rand() * 22); g.lineTo(x + w + 4, top); g.closePath(); g.fill();
+    for (let wx = x + 16; wx < x + w - 26; wx += 36) for (let wy = top + 22; wy < ground - 60; wy += 48) {
+      g.fillStyle = "#f7f3ea"; g.fillRect(wx - 3, wy - 3, 22, 30);
+      const gl = g.createLinearGradient(0, wy, 0, wy + 24); gl.addColorStop(0, "#9cbad3"); gl.addColorStop(1, "#5a7184");
+      g.fillStyle = gl; g.fillRect(wx, wy, 16, 24);
+    }
+    if (rand() < 0.6) { g.fillStyle = rand() < 0.5 ? "#3e5a4c" : "#6b3a2c"; g.fillRect(x + w * 0.4, ground - 52, 28, 52); }
+    x += w + 4;
+  }
+  g.fillStyle = "#a19d96"; g.fillRect(0, ground, W, H * 0.06);
+  g.fillStyle = "#7d7a75"; g.fillRect(0, ground + H * 0.06, W, H);
+  for (let i = 0; i < 3; i++) {
+    const x = 120 + rand() * (W - 240), y = H * 0.4, r = 55 + rand() * 30;
+    g.fillStyle = "#5a4634"; g.fillRect(x - 4, y + r * 0.4, 8, ground - y - r * 0.4);
+    const gr = g.createRadialGradient(x, y, 0, x, y, r);
+    gr.addColorStop(0, "rgba(98,134,72,.95)"); gr.addColorStop(0.7, "rgba(98,134,72,.6)"); gr.addColorStop(1, "rgba(98,134,72,0)");
+    g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2);
+  }
+  g.fillStyle = "rgba(255,248,235,.16)"; g.fillRect(0, 0, W, H);
+  return texture(c);
+}
+
 // The night street outside the window: dark sky, houses and blurry street lights.
 export function nightStreet() {
   const W = 1024, H = 512, c = canvas(W, H), g = c.getContext("2d"), rand = rng(21);
@@ -440,6 +481,42 @@ export function doormat() {
   for (let i = 0; i < 9000; i++) { g.fillStyle = `rgba(${rand() < 0.5 ? "0,0,0" : "255,220,170"},${rand() * 0.12})`; g.fillRect(rand() * W, rand() * H, 2, 3); }
   g.strokeStyle = "#2c1f15"; g.lineWidth = 10; g.strokeRect(14, 14, W - 28, H - 28);
   g.fillStyle = "#2c1f15"; g.font = `800 64px ${FONT}`; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("VELKOMMEN", W / 2, H / 2 + 4);
+  return texture(c);
+}
+
+// A leaf for the plants: green with a lighter middle vein, the rest transparent.
+export function leaf(seed = 1) {
+  const W = 128, H = 256, c = canvas(W, H), g = c.getContext("2d"), rand = rng(seed);
+  const hue = 95 + rand() * 25, lig = 24 + rand() * 10;
+  const grad = g.createLinearGradient(0, H, 0, 0);
+  grad.addColorStop(0, hsl(hue, 45, lig - 4)); grad.addColorStop(1, hsl(hue - 8, 50, lig + 10));
+  g.fillStyle = grad;
+  g.beginPath(); g.moveTo(W / 2, H - 4);
+  g.bezierCurveTo(W * 1.02, H * 0.7, W * 0.92, H * 0.18, W / 2, 4);
+  g.bezierCurveTo(W * 0.08, H * 0.18, -W * 0.02, H * 0.7, W / 2, H - 4);
+  g.fill();
+  g.strokeStyle = hsl(hue - 10, 35, lig + 22, 0.7); g.lineWidth = 3;
+  g.beginPath(); g.moveTo(W / 2, H - 4); g.quadraticCurveTo(W * 0.52, H * 0.5, W / 2, 10); g.stroke();
+  g.lineWidth = 1.2; g.strokeStyle = hsl(hue - 10, 35, lig + 16, 0.4);
+  for (let y = H * 0.85; y > H * 0.15; y -= 20) { g.beginPath(); g.moveTo(W / 2, y); g.quadraticCurveTo(W * 0.3, y - 14, W * 0.16, y - 30); g.moveTo(W / 2, y); g.quadraticCurveTo(W * 0.7, y - 14, W * 0.84, y - 30); g.stroke(); }
+  return texture(c, { mips: true });
+}
+
+// A woven rug with a simple pattern in warm colours, and fringes at the ends.
+export function rug() {
+  const W = 1024, H = 640, c = canvas(W, H), g = c.getContext("2d"), rand = rng(17);
+  g.fillStyle = "#8f3b2c"; g.fillRect(0, 0, W, H);
+  g.fillStyle = "#e3c68f"; g.fillRect(40, 30, W - 80, H - 60);
+  g.fillStyle = "#8f3b2c"; g.fillRect(62, 52, W - 124, H - 104);
+  g.fillStyle = "#2f4a5a"; g.fillRect(90, 80, W - 180, H - 160);
+  // diamonds down the middle
+  for (let i = 0; i < 5; i++) {
+    const cx = 210 + i * 151, cy = H / 2;
+    for (const [r, col] of [[120, "#e3c68f"], [92, "#c0603f"], [60, "#e9dcc0"], [30, "#2f4a5a"]]) { g.fillStyle = col; g.beginPath(); g.moveTo(cx, cy - r * 1.4); g.lineTo(cx + r, cy); g.lineTo(cx, cy + r * 1.4); g.lineTo(cx - r, cy); g.closePath(); g.fill(); }
+  }
+  // the weave
+  for (let k = 0; k < 26000; k++) { g.fillStyle = `rgba(${rand() < 0.5 ? "0,0,0" : "255,240,210"},${rand() * 0.08})`; g.fillRect(rand() * W, rand() * H, 2, 3); }
+  for (let x = 0; x < W; x += 3) { g.fillStyle = "rgba(0,0,0,.06)"; g.fillRect(x, 0, 1, H); }
   return texture(c);
 }
 

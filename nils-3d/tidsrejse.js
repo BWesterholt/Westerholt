@@ -64,7 +64,8 @@ export class TimeTunnel {
     this.max = Math.max(1, ...Object.values(this.count));
 
     // Place the records: each year is one or more rings, each ring turned a little more.
-    const perRing = Math.floor((Math.PI * 2 * R) / (SIZE * 1.12));
+    // records per ring: room for each one turned a little (its diagonal), with air between
+    const perRing = Math.floor((Math.PI * 2 * (R - 0.05)) / (SIZE * 1.18));
     let k = 0;
     for (let y = this.y0; y <= this.y1; y++) {
       const n = this.count[y] || 0;
@@ -75,12 +76,17 @@ export class TimeTunnel {
         const it = list[k];
         const ring = Math.floor(j / perRing), inRing = Math.min(perRing, n - ring * perRing);
         const slot = j - ring * perRing;
-        const a = (slot / inRing) * Math.PI * 2 + y * 0.61 + ring * 0.9 + (rand() - 0.5) * (inRing < 8 ? 0.6 : 0.08);
-        const rr = R + (rand() - 0.5) * 0.22 + (inRing < 8 ? -0.25 : 0);
+        // a little disorder, but never so much that two records in a ring touch: the random turn
+        // is limited to the free space between them
+        const rr0 = R + (inRing < 8 ? -0.25 : 0);
+        const step = (Math.PI * 2) / inRing, need = (SIZE * 1.12) / (rr0 - 0.05);
+        const wiggle = Math.max(0, Math.min(0.6, (step - need) * 0.85));
+        const a = (slot / inRing) * Math.PI * 2 + y * 0.61 + ring * 0.9 + (rand() - 0.5) * wiggle;
+        const rr = rr0 + (rand() - 0.5) * 0.08;
         it.angle = a;
-        it.pos = new THREE.Vector3(Math.cos(a) * rr, Math.sin(a) * rr, this.zOf(y) - (ring + 0.5) * (YEAR / Math.max(rings, 1.6)) + (rand() - 0.5) * 0.12);
+        it.pos = new THREE.Vector3(Math.cos(a) * rr, Math.sin(a) * rr, this.zOf(y) - (ring + 0.5) * (YEAR / Math.max(rings, 1.6)) + (rand() - 0.5) * 0.06);
         // facing you, tipped in towards the middle of the tunnel
-        const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.sin(a) * 0.42, -Math.cos(a) * 0.42, (rand() - 0.5) * 0.18, "XYZ"));
+        const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.sin(a) * 0.42, -Math.cos(a) * 0.42, (rand() - 0.5) * (wiggle > 0.05 ? 0.14 : 0.04), "XYZ"));
         it.quat = q;
         it.index = k;
         it.size = it.rec.t === "Vinyl" ? SIZE : SIZE * 0.78;

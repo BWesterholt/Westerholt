@@ -45,8 +45,8 @@ T.setAnisotropy(Math.min(8, renderer.capabilities.getMaxAnisotropy()));
 setCoverBudget(mobile ? 70 : 120);
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0d0a08);
-scene.fog = new THREE.Fog(0x0d0a08, 9, 26);
+scene.background = new THREE.Color(0xdfe6ea);
+scene.fog = new THREE.Fog(0x9a8a76, 14, 40);
 const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 scene.environmentIntensity = 0;
@@ -65,7 +65,7 @@ composer.addPass(bloom);
 composer.addPass(new OutputPass());
 // A soft vignette and a little film grain, like an old photo of the shop.
 const finish = new ShaderPass({
-  uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uVig: { value: 0.38 }, uGrain: { value: mobile ? 0.022 : 0.03 } },
+  uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uVig: { value: 0.24 }, uGrain: { value: mobile ? 0.022 : 0.03 } },
   vertexShader: "varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
   fragmentShader: `uniform sampler2D tDiffuse; uniform float uTime; uniform float uVig; uniform float uGrain; varying vec2 vUv;
     float h(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
@@ -262,12 +262,12 @@ const lightLevel = { fix: [0, 0, 0], hemi: 0, key: 0, neon: 0, pend: 0, wall: 0,
 function setLights(v) { lightLevel.fix = [v, v, v]; for (const k of ["hemi", "key", "neon", "pend", "wall", "cd", "portal", "dust", "window", "env"]) lightLevel[k] = v; applyLights(0); }
 function applyLights(t) {
   const L = lightLevel, beat = lv.on ? lv.bass : 0;
-  room.fixtures.forEach((f, i) => { const v = L.fix[i]; f.light.intensity = v * 4.2 * (1 + beat * 0.25); f.mats.forEach((m) => { m.emissiveIntensity = v * 2.4; }); });
-  room.lights.hemi.intensity = L.hemi * 0.42;
-  room.lights.key.intensity = L.key * 1.6;
+  room.fixtures.forEach((f, i) => { const v = L.fix[i]; f.light.intensity = v * 4.6 * (1 + beat * 0.25); f.mats.forEach((m) => { m.emissiveIntensity = v * 2.4; }); });
+  room.lights.hemi.intensity = 0.15 + L.hemi * 0.8;
+  room.lights.key.intensity = L.key * 2.1;
   const buzz = L.neon >= 1 ? 0.94 + 0.06 * Math.sin(t * 61) * Math.sin(t * 7.3) - (Math.random() < 0.004 ? 0.4 : 0) : 1;
   const nv = L.neon * buzz * (1 + lv.high * 0.5 + beat * 0.3);
-  room.neon.mat.color.setScalar(nv * 3.2);
+  room.neon.mat.color.setScalar(nv * 2.3);
   room.neon.light.intensity = nv * 4;
   room.pendants.forEach((p) => { p.mat.emissiveIntensity = L.pend * 4 * (1 + beat * 0.3); });
   room.lights.counter.intensity = L.pend * 26;
@@ -280,10 +280,11 @@ function applyLights(t) {
   room.portal.mat.uniforms.uOn.value = L.portal;
   room.portal.light.intensity = L.portal * 3.5;
   room.portal.sign.material.emissiveIntensity = L.portal * 0.35;
-  room.lights.window.intensity = 2.2 + L.window * 0.8;
+  room.lights.window.intensity = 3.5 + L.window * 1.5;
+  room.lights.sun.intensity = 60;
   room.openSign.material.color.setScalar(1.7);
   room.dust.mat.uniforms.uAmount.value = L.dust * 0.55;
-  scene.environmentIntensity = L.env * 0.2;
+  scene.environmentIntensity = 0.08 + L.env * 0.32;
   room.cones.forEach((c) => { const push = lv.on ? lv.bass * c.r * 0.12 : 0; c.cone.position.z = c.base + push; c.cap.position.z = c.base + 0.005 + push; });
 }
 
