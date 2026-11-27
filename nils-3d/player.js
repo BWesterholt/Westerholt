@@ -127,11 +127,16 @@ export function buildCounterGear(scene, { mobile = false } = {}) {
   gear.strip = { mesh: strip, n: bars, levels: new Float32Array(bars) };
   gear.setStrip = (levels) => {
     const m = new THREE.Matrix4();
+    let any = false;
     for (let i = 0; i < bars; i++) {
-      const h = Math.max(0.0001, levels[i] * 0.55);
-      m.makeScale(1, h, 1); m.setPosition(-COUNTER.len / 2 + 0.2 + i * ((COUNTER.len - 0.4) / (bars - 1)), 0.2 + h / 2, 0);
+      // silent bars are left out altogether: even squashed flat they drew a dashed line
+      const on = levels[i] > 0.004, h = on ? levels[i] * 0.55 : 0;
+      any = any || on;
+      if (on) m.makeScale(1, h, 1); else m.makeScale(0, 0, 0);
+      m.setPosition(-COUNTER.len / 2 + 0.2 + i * ((COUNTER.len - 0.4) / (bars - 1)), 0.2 + h / 2, 0);
       strip.setMatrixAt(i, m);
     }
+    strip.visible = any;
     strip.instanceMatrix.needsUpdate = true;
   };
   gear.setStrip(new Float32Array(bars));

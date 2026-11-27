@@ -33,7 +33,7 @@ export function floorboards() {
     const startY = y;
     while (y < startY + H) {
       const len = 520 + rand() * 640;
-      const hue = 25 + rand() * 8, sat = 22 + rand() * 12, lig = 19 + rand() * 11;
+      const hue = 27 + rand() * 8, sat = 30 + rand() * 12, lig = 27 + rand() * 11;
       for (const off of [0, -H, H]) {
         const yy = y + off;
         if (yy > H || yy + len < 0) continue;
@@ -98,9 +98,9 @@ export function bricks({ paint = null } = {}) {
     }
   }
   for (let k = 0; k < 9000; k++) { const v = rand() * 255 | 0; q.fillStyle = `rgba(${v},${v},${v},.12)`; q.fillRect(rand() * S, rand() * S, 2, 2); }
-  // soot and age, darker near the floor
+  // soot and age, darker near the floor (only a little on painted bricks)
   const age = g.createLinearGradient(0, 0, 0, S);
-  age.addColorStop(0, "rgba(10,6,4,.12)"); age.addColorStop(1, "rgba(20,10,5,.28)");
+  age.addColorStop(0, paint ? "rgba(60,40,20,.03)" : "rgba(10,6,4,.12)"); age.addColorStop(1, paint ? "rgba(60,40,20,.1)" : "rgba(20,10,5,.28)");
   g.fillStyle = age; g.fillRect(0, 0, S, S);
   return { map: texture(c, { repeat: [1, 1] }), bump: texture(b, { srgb: false, repeat: [1, 1] }) };
 }
@@ -401,6 +401,47 @@ export function softDot(S = 64, inner = "rgba(255,240,220,1)") {
   return texture(c, { mips: false });
 }
 
+// The street outside the window on a bright day: town houses in warm colours, white window
+// frames, a couple of trees, all a little out of focus.
+export function dayStreet() {
+  const W = 1024, H = 512, c = canvas(W, H), g = c.getContext("2d"), rand = rng(23);
+  const sky = g.createLinearGradient(0, 0, 0, H * 0.6);
+  sky.addColorStop(0, "#9fc3e6"); sky.addColorStop(1, "#eaf0f2");
+  g.fillStyle = sky; g.fillRect(0, 0, W, H);
+  for (let i = 0; i < 14; i++) {
+    const x = rand() * W, y = rand() * H * 0.25, r = 30 + rand() * 70;
+    const gr = g.createRadialGradient(x, y, 0, x, y, r);
+    gr.addColorStop(0, "rgba(255,255,255,.55)"); gr.addColorStop(1, "rgba(255,255,255,0)");
+    g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2);
+  }
+  const cols = ["#d9a066", "#e6c98f", "#c97b5a", "#9fb29a", "#e3d3b8", "#b8a07a", "#d98e73", "#f0e2c4"];
+  const ground = H * 0.66;
+  for (let x = -20; x < W;) {
+    const w = 120 + rand() * 150, h = 170 + rand() * 120, top = ground - h;
+    g.fillStyle = cols[Math.floor(rand() * cols.length)]; g.fillRect(x, top, w, h + 40);
+    g.fillStyle = rand() < 0.5 ? "#7a3f2e" : "#55535a";
+    g.beginPath(); g.moveTo(x - 4, top); g.lineTo(x + w * 0.5, top - 26 - rand() * 22); g.lineTo(x + w + 4, top); g.closePath(); g.fill();
+    for (let wx = x + 16; wx < x + w - 26; wx += 36) for (let wy = top + 22; wy < ground - 60; wy += 48) {
+      g.fillStyle = "#f7f3ea"; g.fillRect(wx - 3, wy - 3, 22, 30);
+      const gl = g.createLinearGradient(0, wy, 0, wy + 24); gl.addColorStop(0, "#9cbad3"); gl.addColorStop(1, "#5a7184");
+      g.fillStyle = gl; g.fillRect(wx, wy, 16, 24);
+    }
+    if (rand() < 0.6) { g.fillStyle = rand() < 0.5 ? "#3e5a4c" : "#6b3a2c"; g.fillRect(x + w * 0.4, ground - 52, 28, 52); }
+    x += w + 4;
+  }
+  g.fillStyle = "#a19d96"; g.fillRect(0, ground, W, H * 0.06);
+  g.fillStyle = "#7d7a75"; g.fillRect(0, ground + H * 0.06, W, H);
+  for (let i = 0; i < 3; i++) {
+    const x = 120 + rand() * (W - 240), y = H * 0.4, r = 55 + rand() * 30;
+    g.fillStyle = "#5a4634"; g.fillRect(x - 4, y + r * 0.4, 8, ground - y - r * 0.4);
+    const gr = g.createRadialGradient(x, y, 0, x, y, r);
+    gr.addColorStop(0, "rgba(98,134,72,.95)"); gr.addColorStop(0.7, "rgba(98,134,72,.6)"); gr.addColorStop(1, "rgba(98,134,72,0)");
+    g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2);
+  }
+  g.fillStyle = "rgba(255,248,235,.16)"; g.fillRect(0, 0, W, H);
+  return texture(c);
+}
+
 // The night street outside the window: dark sky, houses and blurry street lights.
 export function nightStreet() {
   const W = 1024, H = 512, c = canvas(W, H), g = c.getContext("2d"), rand = rng(21);
@@ -443,6 +484,42 @@ export function doormat() {
   return texture(c);
 }
 
+// A leaf for the plants: green with a lighter middle vein, the rest transparent.
+export function leaf(seed = 1) {
+  const W = 128, H = 256, c = canvas(W, H), g = c.getContext("2d"), rand = rng(seed);
+  const hue = 95 + rand() * 25, lig = 24 + rand() * 10;
+  const grad = g.createLinearGradient(0, H, 0, 0);
+  grad.addColorStop(0, hsl(hue, 45, lig - 4)); grad.addColorStop(1, hsl(hue - 8, 50, lig + 10));
+  g.fillStyle = grad;
+  g.beginPath(); g.moveTo(W / 2, H - 4);
+  g.bezierCurveTo(W * 1.02, H * 0.7, W * 0.92, H * 0.18, W / 2, 4);
+  g.bezierCurveTo(W * 0.08, H * 0.18, -W * 0.02, H * 0.7, W / 2, H - 4);
+  g.fill();
+  g.strokeStyle = hsl(hue - 10, 35, lig + 22, 0.7); g.lineWidth = 3;
+  g.beginPath(); g.moveTo(W / 2, H - 4); g.quadraticCurveTo(W * 0.52, H * 0.5, W / 2, 10); g.stroke();
+  g.lineWidth = 1.2; g.strokeStyle = hsl(hue - 10, 35, lig + 16, 0.4);
+  for (let y = H * 0.85; y > H * 0.15; y -= 20) { g.beginPath(); g.moveTo(W / 2, y); g.quadraticCurveTo(W * 0.3, y - 14, W * 0.16, y - 30); g.moveTo(W / 2, y); g.quadraticCurveTo(W * 0.7, y - 14, W * 0.84, y - 30); g.stroke(); }
+  return texture(c, { mips: true });
+}
+
+// A woven rug with a simple pattern in warm colours, and fringes at the ends.
+export function rug() {
+  const W = 1024, H = 640, c = canvas(W, H), g = c.getContext("2d"), rand = rng(17);
+  g.fillStyle = "#8f3b2c"; g.fillRect(0, 0, W, H);
+  g.fillStyle = "#e3c68f"; g.fillRect(40, 30, W - 80, H - 60);
+  g.fillStyle = "#8f3b2c"; g.fillRect(62, 52, W - 124, H - 104);
+  g.fillStyle = "#2f4a5a"; g.fillRect(90, 80, W - 180, H - 160);
+  // diamonds down the middle
+  for (let i = 0; i < 5; i++) {
+    const cx = 210 + i * 151, cy = H / 2;
+    for (const [r, col] of [[120, "#e3c68f"], [92, "#c0603f"], [60, "#e9dcc0"], [30, "#2f4a5a"]]) { g.fillStyle = col; g.beginPath(); g.moveTo(cx, cy - r * 1.4); g.lineTo(cx + r, cy); g.lineTo(cx, cy + r * 1.4); g.lineTo(cx - r, cy); g.closePath(); g.fill(); }
+  }
+  // the weave
+  for (let k = 0; k < 26000; k++) { g.fillStyle = `rgba(${rand() < 0.5 ? "0,0,0" : "255,240,210"},${rand() * 0.08})`; g.fillRect(rand() * W, rand() * H, 2, 3); }
+  for (let x = 0; x < W; x += 3) { g.fillStyle = "rgba(0,0,0,.06)"; g.fillRect(x, 0, 1, H); }
+  return texture(c);
+}
+
 // Text on a small display (the till, the amplifier, the CD player).
 export function display(lines, { w = 512, h = 128, color = "#7CFFB2", bg = "#06140d" } = {}) {
   const c = canvas(w, h), g = c.getContext("2d");
@@ -462,4 +539,70 @@ export function portalSign() {
   g.font = `800 92px ${FONT}`; g.fillText("TIDSREJSEN", W / 2, H * 0.42);
   g.font = `500 36px ${FONT}`; g.fillStyle = "#C8A25A"; g.fillText("Flyv gennem årtierne  →", W / 2, H * 0.76);
   return texture(c);
+}
+
+// Someone going past outside the window, in two steps of a walk (left and right half of the
+// picture). Drawn simply and a little soft, as seen through the glass. The figure faces right.
+// kind: { draw: "walker" | "bike", coat, trousers, hair, skin, bag, dog, w (metres), h (metres) }
+const shade = (hex, f) => { const n = parseInt(hex.slice(1), 16); return `rgb(${((n >> 16) & 255) * f | 0},${((n >> 8) & 255) * f | 0},${(n & 255) * f | 0})`; };
+export function passer(k) {
+  const PX = 300; // pixels per metre
+  const FW = Math.round(k.w * PX), FH = Math.round(k.h * PX);
+  const c = canvas(FW * 2, FH), g = c.getContext("2d");
+  const skin = k.skin || "#e0b48f", hair = k.hair || "#3b2a20", trousers = k.trousers || "#3a3a44";
+  const line = (x0, y0, x1, y1, w, col) => { g.strokeStyle = col; g.lineWidth = w; g.lineCap = "round"; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke(); };
+  for (let f = 0; f < 2; f++) {
+    g.save();
+    g.translate(f * FW, 0);
+    g.filter = "blur(1.2px)";
+    const ground = FH - 6, m = PX; // m: one metre in pixels
+    if (k.draw === "bike") {
+      const r = 0.33 * m, bx = FW * 0.5, wy = ground - r, w0 = bx - 0.52 * m, w1 = bx + 0.52 * m;
+      for (const wx of [w0, w1]) { g.strokeStyle = "#2a2a2e"; g.lineWidth = 7; g.beginPath(); g.arc(wx, wy, r, 0, Math.PI * 2); g.stroke(); g.lineWidth = 1.5; g.strokeStyle = "rgba(60,60,66,.6)"; for (let s = 0; s < 8; s++) { const a = (s / 8) * Math.PI + f * 0.2; line(wx - Math.cos(a) * r, wy - Math.sin(a) * r, wx + Math.cos(a) * r, wy + Math.sin(a) * r, 1.5, "rgba(60,60,66,.55)"); } }
+      const crank = [bx - 0.02 * m, wy], seat = [bx - 0.18 * m, wy - 0.55 * m], bar = [bx + 0.36 * m, wy - 0.62 * m];
+      const frame = k.frame || "#b03a2e";
+      line(w0, wy, crank[0], crank[1], 6, frame); line(crank[0], crank[1], seat[0], seat[1], 6, frame); line(seat[0], seat[1] + 0.08 * m, bar[0] - 0.04 * m, bar[1] + 0.1 * m, 6, frame); line(crank[0], crank[1], bar[0] - 0.04 * m, bar[1] + 0.1 * m, 6, frame); line(bar[0] - 0.04 * m, bar[1] + 0.1 * m, w1, wy, 6, frame); line(w0, wy, seat[0], seat[1] + 0.08 * m, 5, frame);
+      line(bar[0] - 0.04 * m, bar[1] + 0.1 * m, bar[0], bar[1], 5, "#2a2a2e"); line(bar[0], bar[1], bar[0] + 0.1 * m, bar[1] + 0.02 * m, 6, "#2a2a2e");
+      // the rider: pedals in two positions
+      const hip = [seat[0], seat[1] - 0.06 * m], ped = f ? [[crank[0] + 0.16 * m, crank[1] + 0.05 * m], [crank[0] - 0.16 * m, crank[1] - 0.05 * m]] : [[crank[0], crank[1] + 0.17 * m], [crank[0], crank[1] - 0.17 * m]];
+      for (const [i, p] of ped.entries()) { const knee = [hip[0] + 0.3 * m, hip[1] + 0.12 * m + (p[1] - crank[1]) * 0.5]; line(hip[0], hip[1], knee[0], knee[1], 15, i ? "rgba(40,40,48,1)" : trousers); line(knee[0], knee[1], p[0], p[1], 13, i ? "rgba(40,40,48,1)" : trousers); }
+      const sh = [hip[0] + 0.24 * m, hip[1] - 0.5 * m];
+      line(hip[0], hip[1], sh[0], sh[1], 34, k.coat); line(sh[0], sh[1] + 6, bar[0], bar[1], 11, k.coat);
+      g.fillStyle = skin; g.beginPath(); g.arc(sh[0] + 0.08 * m, sh[1] - 0.14 * m, 0.1 * m, 0, Math.PI * 2); g.fill();
+      g.fillStyle = hair; g.beginPath(); g.arc(sh[0] + 0.06 * m, sh[1] - 0.17 * m, 0.1 * m, Math.PI * 0.95, Math.PI * 2.05); g.fill();
+    } else {
+      const x = (k.dog ? 0.3 : 0.5) * FW, hipY = ground - 0.88 * m, shY = ground - 1.38 * m, headY = ground - 1.53 * m;
+      const arm = shade(k.coat, 0.72);
+      const stride = f ? 0.2 * m : 0.06 * m;
+      // legs and shoes, the far one a little darker
+      for (const [i, s] of [[1, -stride], [0, stride]]) { const col = i ? "rgba(30,30,36,1)" : trousers; line(x, hipY, x + s, ground - 0.05 * m, 15, col); g.fillStyle = "#2b2420"; g.beginPath(); g.ellipse(x + s + 6, ground - 0.03 * m, 13, 7, 0, 0, Math.PI * 2); g.fill(); }
+      // coat
+      g.fillStyle = k.coat; g.beginPath(); g.roundRect(x - 0.16 * m, shY, 0.32 * m, hipY - shY + 0.12 * m, 0.08 * m); g.fill();
+      // arms swing with the legs
+      const swing = f ? 0.15 * m : 0.04 * m;
+      line(x + 0.02 * m, shY - 0.06 * m, x + 0.02 * m, shY + 0.02 * m, 13, skin);
+      line(x, shY + 0.05 * m, x - swing, hipY + 0.02 * m, 12, arm);
+      if (k.bag) { line(x, shY + 0.05 * m, x + swing * 0.4, hipY + 0.04 * m, 12, arm); g.fillStyle = k.bag; g.beginPath(); g.roundRect(x + swing * 0.4 - 0.1 * m, hipY, 0.2 * m, 0.24 * m, 6); g.fill(); line(x + swing * 0.4 - 0.05 * m, hipY + 2, x + swing * 0.4, hipY - 0.06 * m, 3, k.bag); }
+      else line(x, shY + 0.05 * m, x + swing, hipY + 0.02 * m, 12, arm);
+      g.fillStyle = skin; g.beginPath(); g.arc(x + 0.02 * m, headY, 0.11 * m, 0, Math.PI * 2); g.fill();
+      g.fillStyle = hair; g.beginPath(); g.arc(x, headY - 0.02 * m, 0.115 * m, Math.PI * 0.9, Math.PI * 2.1); g.fill();
+      if (k.dog) {
+        // a big friendly dog on a lead
+        const dx = x + 0.6 * m, dy = ground - 0.5 * m;
+        line(x + swing, hipY + 0.02 * m, dx + 0.22 * m, dy - 0.12 * m, 2.5, "#5a3a24");
+        const ds = f ? 0.08 * m : 0.015 * m, dark = shade(k.dog, 0.75);
+        for (const lx of [dx - 0.2 * m, dx + 0.19 * m]) { line(lx, dy, lx - ds, ground - 0.02 * m, 10, dark); line(lx, dy, lx + ds, ground - 0.02 * m, 10, k.dog); }
+        g.fillStyle = k.dog; g.beginPath(); g.ellipse(dx, dy, 0.3 * m, 0.12 * m, 0, 0, Math.PI * 2); g.fill();
+        line(dx + 0.24 * m, dy - 0.04 * m, dx + 0.3 * m, dy - 0.18 * m, 16, k.dog);
+        g.beginPath(); g.ellipse(dx + 0.33 * m, dy - 0.22 * m, 0.1 * m, 0.075 * m, 0.2, 0, Math.PI * 2); g.fill();
+        g.beginPath(); g.ellipse(dx + 0.42 * m, dy - 0.19 * m, 0.06 * m, 0.04 * m, 0.25, 0, Math.PI * 2); g.fill();
+        g.fillStyle = dark; g.beginPath(); g.ellipse(dx + 0.29 * m, dy - 0.2 * m, 0.035 * m, 0.07 * m, 0.3, 0, Math.PI * 2); g.fill();
+        line(dx - 0.28 * m, dy - 0.03 * m, dx - 0.4 * m, dy - 0.16 * m + (f ? 0.03 * m : 0), 7, k.dog);
+      }
+    }
+    g.restore();
+  }
+  const t = texture(c);
+  t.repeat.set(0.5, 1);
+  return t;
 }

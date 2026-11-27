@@ -1,4 +1,4 @@
-// The shop itself: floorboards, brick walls, the big window onto the night street, the counter,
+// The shop itself: floorboards, painted brick walls, the big window onto a sunny street, the counter,
 // the lights, the neon sign, the doorway to the time journey, posters and dust in the air.
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three";
@@ -23,23 +23,23 @@ export function buildRoom(scene, { mobile = false, tables = [] } = {}) {
   room.floor = floor;
 
   // Ceiling, beams and ducts
-  const ceil = add(new THREE.Mesh(new THREE.PlaneGeometry(W, D), new THREE.MeshStandardMaterial({ color: 0x1a1715, roughness: 0.95 })));
+  const ceil = add(new THREE.Mesh(new THREE.PlaneGeometry(W, D), new THREE.MeshStandardMaterial({ color: 0xc9c0b2, roughness: 0.95 })));
   ceil.rotation.x = Math.PI / 2; ceil.position.set(0, H, (R.z0 + R.z1) / 2);
-  const beamMat = new THREE.MeshStandardMaterial({ map: T.darkWood(9, { lig: 14 }), roughness: 0.8 });
+  const beamMat = new THREE.MeshStandardMaterial({ map: T.darkWood(9, { hue: 28, lig: 34 }), roughness: 0.8 });
   const beams = new THREE.InstancedMesh(new THREE.BoxGeometry(W, 0.24, 0.2), beamMat, 7);
   for (let i = 0; i < 7; i++) { const m = new THREE.Matrix4().makeTranslation(0, H - 0.12, 5 - i * 1.8); beams.setMatrixAt(i, m); }
   add(beams);
-  const duct = new THREE.MeshStandardMaterial({ color: 0x8c8f93, metalness: 0.85, roughness: 0.38 });
+  const duct = new THREE.MeshStandardMaterial({ color: 0xc4c8cc, metalness: 0.7, roughness: 0.4 });
   for (const x of [-3.9, 3.9]) { const d = add(new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, D, 20), duct)); d.rotation.x = Math.PI / 2; d.position.set(x, H - 0.36, (R.z0 + R.z1) / 2); }
 
-  // Walls: brick on the sides and the front, deep green plaster behind the counter
-  const brick = T.bricks();
+  // Walls: white-painted brick on the sides and the front, warm ochre behind the counter
+  const brick = T.bricks({ paint: { h: 34, s: 22, l: 73, mortar: "#c9bfb0" } });
   const brickMat = (rx, ry) => { const m = brick.map.clone(), b = brick.bump.clone(); m.repeat.set(rx, ry); b.repeat.set(rx, ry); m.needsUpdate = b.needsUpdate = true; return new THREE.MeshStandardMaterial({ map: m, bumpMap: b, bumpScale: 2.2, roughness: 0.92 }); };
   const left = add(new THREE.Mesh(new THREE.PlaneGeometry(D, H), brickMat(D / 2.4, H / 2.4)));
   left.rotation.y = Math.PI / 2; left.position.set(R.x0, H / 2, (R.z0 + R.z1) / 2); left.receiveShadow = true;
   const right = add(new THREE.Mesh(new THREE.PlaneGeometry(D, H), brickMat(D / 2.4, H / 2.4)));
   right.rotation.y = -Math.PI / 2; right.position.set(R.x1, H / 2, (R.z0 + R.z1) / 2); right.receiveShadow = true;
-  const back = add(new THREE.Mesh(new THREE.PlaneGeometry(W, H), new THREE.MeshStandardMaterial({ map: T.plaster("#20372f"), roughness: 0.9 })));
+  const back = add(new THREE.Mesh(new THREE.PlaneGeometry(W, H), new THREE.MeshStandardMaterial({ map: T.plaster("#b88d4a"), roughness: 0.9 })));
   back.position.set(0, H / 2, R.z0);
   room.backWall = back;
 
@@ -52,12 +52,13 @@ export function buildRoom(scene, { mobile = false, tables = [] } = {}) {
   const fm = brick.map.clone(), fbm = brick.bump.clone(); fm.repeat.set(1 / 2.4, 1 / 2.4); fbm.repeat.set(1 / 2.4, 1 / 2.4); fm.needsUpdate = fbm.needsUpdate = true;
   const front = add(new THREE.Mesh(new THREE.ShapeGeometry(shape), new THREE.MeshStandardMaterial({ map: fm, bumpMap: fbm, bumpScale: 2.2, roughness: 0.92 })));
   front.rotation.y = Math.PI; front.position.set(0, 0, R.z1);
+  front.castShadow = true; // so the sun comes in through the window only
   const frameMat = new THREE.MeshStandardMaterial({ color: 0x1f2a26, roughness: 0.55, metalness: 0.2 });
   const box = (w, h, d, x, y, z, mat) => { const m = add(new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat)); m.position.set(x, y, z); return m; };
   // window frame, sill and mullions
   box(WIN.x1 - WIN.x0 + 0.12, 0.08, 0.3, (WIN.x0 + WIN.x1) / 2, WIN.y0 - 0.02, R.z1 - 0.05, frameMat);
   box(WIN.x1 - WIN.x0 + 0.12, 0.07, 0.16, (WIN.x0 + WIN.x1) / 2, WIN.y1 + 0.02, R.z1, frameMat);
-  for (const x of [WIN.x0, WIN.x0 + (WIN.x1 - WIN.x0) / 3, WIN.x0 + (2 * (WIN.x1 - WIN.x0)) / 3, WIN.x1]) box(0.06, WIN.y1 - WIN.y0, 0.14, x, (WIN.y0 + WIN.y1) / 2, R.z1, frameMat);
+  for (const x of [WIN.x0, WIN.x0 + (WIN.x1 - WIN.x0) / 3, WIN.x0 + (2 * (WIN.x1 - WIN.x0)) / 3, WIN.x1]) box(0.06, WIN.y1 - WIN.y0, 0.14, x, (WIN.y0 + WIN.y1) / 2, R.z1, frameMat).castShadow = true;
   box(0.07, DOOR.y1, 0.14, DOOR.x0, DOOR.y1 / 2, R.z1, frameMat); box(0.07, DOOR.y1, 0.14, DOOR.x1, DOOR.y1 / 2, R.z1, frameMat); box(DOOR.x1 - DOOR.x0, 0.08, 0.14, (DOOR.x0 + DOOR.x1) / 2, DOOR.y1, R.z1, frameMat);
   box(DOOR.x1 - DOOR.x0 - 0.1, 0.25, 0.05, (DOOR.x0 + DOOR.x1) / 2, 0.13, R.z1, frameMat);
   const handle = box(0.03, 0.4, 0.04, DOOR.x0 + 0.16, 1.05, R.z1 - 0.06, new THREE.MeshStandardMaterial({ color: 0xc9a44c, metalness: 1, roughness: 0.25 }));
@@ -65,10 +66,11 @@ export function buildRoom(scene, { mobile = false, tables = [] } = {}) {
   const glassMat = new THREE.MeshStandardMaterial({ color: 0x9fb4c8, transparent: true, opacity: 0.1, roughness: 0.03, metalness: 0, envMapIntensity: 1.4, depthWrite: false });
   const glass = add(new THREE.Mesh(new THREE.PlaneGeometry(WIN.x1 - WIN.x0, WIN.y1 - WIN.y0), glassMat)); glass.position.set((WIN.x0 + WIN.x1) / 2, (WIN.y0 + WIN.y1) / 2, R.z1 + 0.01); glass.rotation.y = Math.PI;
   const dglass = add(new THREE.Mesh(new THREE.PlaneGeometry(DOOR.x1 - DOOR.x0, DOOR.y1 - 0.3), glassMat)); dglass.position.set((DOOR.x0 + DOOR.x1) / 2, 0.3 + (DOOR.y1 - 0.3) / 2, R.z1 + 0.01); dglass.rotation.y = Math.PI;
-  const street = add(new THREE.Mesh(new THREE.PlaneGeometry(16, 6), new THREE.MeshBasicMaterial({ map: T.nightStreet(), color: 0xb0b0b0 })));
+  const street = add(new THREE.Mesh(new THREE.PlaneGeometry(16, 6), new THREE.MeshBasicMaterial({ map: T.dayStreet(), color: 0xdedede })));
   street.position.set(-1, 2.2, R.z1 + 3.2); street.rotation.y = Math.PI;
-  const sidewalk = add(new THREE.Mesh(new THREE.PlaneGeometry(16, 3.2), new THREE.MeshStandardMaterial({ color: 0x15161a, roughness: 0.35, metalness: 0.1 })));
+  const sidewalk = add(new THREE.Mesh(new THREE.PlaneGeometry(16, 3.2), new THREE.MeshStandardMaterial({ color: 0x8d8a84, roughness: 0.8, metalness: 0 })));
   sidewalk.rotation.x = -Math.PI / 2; sidewalk.position.set(-1, -0.02, R.z1 + 1.6);
+  room.passers = passers(add, R, mobile);
   // gold letters on the window, seen from inside (mirrored), and the blue "ÅBEN" neon
   {
     const c = T.canvas(2048, 256), g = c.getContext("2d");
@@ -88,11 +90,11 @@ export function buildRoom(scene, { mobile = false, tables = [] } = {}) {
   mat.rotation.x = -Math.PI / 2; mat.rotation.z = Math.PI; mat.position.set((DOOR.x0 + DOOR.x1) / 2, 0.004, R.z1 - 0.5); mat.receiveShadow = true;
 
   // Skirting boards
-  const skirt = new THREE.MeshStandardMaterial({ color: 0x15100c, roughness: 0.7 });
+  const skirt = new THREE.MeshStandardMaterial({ color: 0x6a4a31, roughness: 0.7 });
   box(0.03, 0.12, D, R.x0 + 0.015, 0.06, (R.z0 + R.z1) / 2, skirt); box(0.03, 0.12, D, R.x1 - 0.015, 0.06, (R.z0 + R.z1) / 2, skirt); box(W, 0.12, 0.03, 0, 0.06, R.z0 + 0.015, skirt);
 
   // The tables under the crates
-  const tableTop = new THREE.MeshStandardMaterial({ map: T.darkWood(4, { lig: 22 }), roughness: 0.6 });
+  const tableTop = new THREE.MeshStandardMaterial({ map: T.darkWood(4, { hue: 26, lig: 34 }), roughness: 0.6 });
   const legMat = new THREE.MeshStandardMaterial({ color: 0x1b1410, roughness: 0.6 });
   const stock = new THREE.MeshStandardMaterial({ color: 0x9c7a52, roughness: 0.95 });
   for (const t of tables) {
@@ -114,7 +116,7 @@ export function buildRoom(scene, { mobile = false, tables = [] } = {}) {
   const C = COUNTER;
   const counterWood = new THREE.MeshStandardMaterial({ map: panelWood(), roughness: 0.65 });
   const body = box(C.len, C.top - 0.05, C.depth, C.x, (C.top - 0.05) / 2, C.z, counterWood); body.castShadow = true; body.receiveShadow = true;
-  const topMat = new THREE.MeshStandardMaterial({ map: T.darkWood(12, { hue: 20, lig: 26 }), roughness: 0.35, metalness: 0.05 });
+  const topMat = new THREE.MeshStandardMaterial({ map: T.darkWood(12, { hue: 22, lig: 32 }), roughness: 0.35, metalness: 0.05 });
   const ctop = add(new THREE.Mesh(new RoundedBoxGeometry(C.len + 0.12, 0.06, C.depth + 0.1, 3, 0.02), topMat));
   ctop.position.set(C.x, C.top - 0.03, C.z + 0.02); ctop.castShadow = true; ctop.receiveShadow = true;
   room.colliders.push({ x0: C.x - C.len / 2 - 0.35, x1: C.x + C.len / 2 + 0.35, z0: R.z0, z1: C.z + C.depth / 2 + 0.35 });
@@ -138,7 +140,7 @@ export function buildRoom(scene, { mobile = false, tables = [] } = {}) {
   }
 
   // Lights. The fluorescent tubes over the tables come on one by one when you arrive.
-  const hemi = new THREE.HemisphereLight(0xffdcb2, 0x24180f, 0.0); add(hemi); room.lights.hemi = hemi;
+  const hemi = new THREE.HemisphereLight(0xfff0dc, 0x8a6a4a, 0.0); add(hemi); room.lights.hemi = hemi;
   const key = new THREE.DirectionalLight(0xffe3c2, 0.0);
   key.position.set(1.8, 7, 2.4); key.target.position.set(0, 0, 0.3);
   key.castShadow = true;
@@ -180,17 +182,22 @@ export function buildRoom(scene, { mobile = false, tables = [] } = {}) {
   const wallSpot = new THREE.SpotLight(0xffd7a8, 0, 6, 0.75, 0.55, 2);
   wallSpot.position.set(0, 3.1, R.z0 + 1.9); wallSpot.target.position.set(0, 1.85, R.z0);
   add(wallSpot); add(wallSpot.target); room.lights.wall = wallSpot;
-  const windowLight = new THREE.PointLight(0x6f8dff, 0, 7, 2); windowLight.position.set(-1.8, 1.8, R.z1 - 0.6); add(windowLight); room.lights.window = windowLight;
+  const windowLight = new THREE.PointLight(0xfff1de, 0, 8, 2); windowLight.position.set(-1.8, 1.8, R.z1 - 0.6); add(windowLight); room.lights.window = windowLight;
+  // Afternoon sun through the shop window: it falls in patches shaped like the window panes.
+  const sun = new THREE.SpotLight(0xffeccc, 0, 16, 0.72, 0.45, 2);
+  sun.position.set(-2.1, 3.5, R.z1 + 2.9); sun.target.position.set(-1.3, 0, 2.4);
+  if (!mobile) { sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -0.0006; sun.shadow.normalBias = 0.03; sun.shadow.camera.near = 1.5; sun.shadow.camera.far = 16; }
+  add(sun); add(sun.target); room.lights.sun = sun;
 
   // The neon sign hanging over the counter
   const neonTex = T.neon([
-    { text: "Westerholt", font: `italic 700 230px ${T.SERIF}`, color: "#ffb27a", core: "#fff4e6", width: 13, x: 1024, y: 200 },
+    { text: "Westerholt", font: `italic 700 230px ${T.SERIF}`, color: "#ff9447", core: "#ffd9b8", width: 12, x: 1024, y: 200 },
     { text: "PLADER", font: `900 300px ${T.FONT}`, color: "#ff4b33", core: "#ffe9e2", width: 17, x: 1024, y: 470 },
   ]);
   const neonMat = new THREE.MeshBasicMaterial({ map: neonTex, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, color: new THREE.Color(0, 0, 0) });
   const neonSign = add(new THREE.Mesh(new THREE.PlaneGeometry(2.3, 0.72), neonMat));
   neonSign.position.set(0, 2.62, C.z + 0.9);
-  const backing = add(new THREE.Mesh(new THREE.PlaneGeometry(2.36, 0.78), new THREE.MeshStandardMaterial({ color: 0x0c0c0d, transparent: true, opacity: 0.55, roughness: 0.2 })));
+  const backing = add(new THREE.Mesh(new THREE.PlaneGeometry(2.36, 0.78), new THREE.MeshStandardMaterial({ color: 0x141211, roughness: 0.3 })));
   backing.position.set(0, 2.62, C.z + 0.885);
   for (const x of [-1, 1]) { const w = add(new THREE.Mesh(new THREE.CylinderGeometry(0.0025, 0.0025, H - 2.98, 4), legMat)); w.position.set(x, 2.98 + (H - 2.98) / 2, C.z + 0.88); }
   const neonLight = new THREE.PointLight(0xff6a45, 0, 7, 2); neonLight.position.set(0, 2.3, C.z + 1.35); add(neonLight);
@@ -204,6 +211,15 @@ export function buildRoom(scene, { mobile = false, tables = [] } = {}) {
   // Dust in the air
   room.dust = dust(add, mobile ? 260 : 700);
 
+  // Plants and a rug, so it feels lived in
+  const leaves = [1, 2, 3].map((k) => new THREE.MeshStandardMaterial({ map: T.leaf(k), alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.7 }));
+  const pot = new THREE.MeshStandardMaterial({ color: 0xb0623d, roughness: 0.9 });
+  for (const [x, z, sc, seed] of [[-5.35, 5.25, 1.15, 3], [2.95, -4.85, 0.95, 8], [4.6, 5.3, 1.05, 5], [-5.35, -6.35, 1.2, 11]]) {
+    room.colliders.push(plant(add, x, z, sc, seed, leaves, pot, mobile));
+  }
+  const rugMesh = add(new THREE.Mesh(new THREE.PlaneGeometry(2.8, 1.75), new THREE.MeshStandardMaterial({ map: T.rug(), roughness: 1 })));
+  rugMesh.rotation.x = -Math.PI / 2; rugMesh.position.set(0, 0.004, C.z + 1.55); rugMesh.receiveShadow = true;
+
   // The doorway to the time journey on the right wall
   room.portal = portal(add, R.x1, -0.35);
   room.pick.push(room.portal.mesh);
@@ -211,9 +227,33 @@ export function buildRoom(scene, { mobile = false, tables = [] } = {}) {
   return room;
 }
 
+// A potted plant: a terracotta pot and long leaves bending outwards. Returns its collider.
+function plant(add, x, z, sc, seed, mats, potMat, mobile) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.scale.setScalar(sc); add(g);
+  const p = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.14, 0.36, 24), potMat); p.position.y = 0.18; p.castShadow = true; p.receiveShadow = true; g.add(p);
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(0.19, 0.018, 8, 24), potMat); rim.rotation.x = Math.PI / 2; rim.position.y = 0.36; g.add(rim);
+  const soil = new THREE.Mesh(new THREE.CircleGeometry(0.18, 20), new THREE.MeshStandardMaterial({ color: 0x2a1d14, roughness: 1 })); soil.rotation.x = -Math.PI / 2; soil.position.y = 0.34; g.add(soil);
+  const r = rng(seed), n = mobile ? 11 : 16;
+  for (let i = 0; i < n; i++) {
+    const len = 0.45 + r() * 0.4, geo = new THREE.PlaneGeometry(0.2 + r() * 0.08, len, 1, 6);
+    geo.translate(0, len / 2, 0);
+    const pos = geo.attributes.position, bend = 0.5 + r() * 0.7;
+    for (let k = 0; k < pos.count; k++) { const y = pos.getY(k) / len; pos.setZ(k, y * y * bend * len * 0.6); }
+    geo.computeVertexNormals();
+    const m = new THREE.Mesh(geo, mats[i % mats.length]);
+    m.position.y = 0.33;
+    m.rotation.order = "YXZ";
+    m.rotation.y = i * 2.39996 + r() * 0.3; m.rotation.x = 0.15 + r() * 0.5 * (i % 3 ? 1 : 0.4);
+    m.castShadow = true;
+    g.add(m);
+  }
+  const s = 0.32 * sc;
+  return { x0: x - s, x1: x + s, z0: z - s, z1: z + s };
+}
+
 // Vertical panels for the front of the counter.
 function panelWood() {
-  const t = T.darkWood(15, { hue: 22, lig: 20 });
+  const t = T.darkWood(15, { hue: 24, lig: 30 });
   const c = t.image, g = c.getContext("2d");
   for (let x = 0; x < c.width; x += c.width / 12) { g.fillStyle = "rgba(0,0,0,.45)"; g.fillRect(x, 0, 3, c.height); g.fillStyle = "rgba(255,220,180,.06)"; g.fillRect(x + 3, 0, 2, c.height); }
   t.needsUpdate = true;
@@ -321,4 +361,41 @@ export function hangingSign(scene, text, sub, x, z, rotY) {
   const wire = new THREE.MeshStandardMaterial({ color: 0x222222 });
   for (const dx of [-0.4, 0.4]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.002, 0.002, 0.7, 4), wire); w.position.set(dx, 0.5, 0); grp.add(w); }
   return grp;
+}
+
+// People going past on the pavement outside, one now and then: walkers, someone with a dog,
+// a cyclist. Flat figures in two steps of a walk, behind the glass.
+function passers(add, R, mobile) {
+  const kinds = [
+    { draw: "walker", coat: "#8a4f3c", trousers: "#2f3440", hair: "#3b2a20", w: 0.7, h: 1.78, speed: 1.3 },
+    { draw: "bike", coat: "#3f6f8f", trousers: "#2b2b33", hair: "#c9a06a", frame: "#b03a2e", w: 1.75, h: 1.72, speed: 4.4 },
+    { draw: "walker", coat: "#d1a64a", trousers: "#44403c", hair: "#6b4226", skin: "#c98f6a", dog: "#b07a42", w: 1.65, h: 1.68, speed: 1.15 },
+    { draw: "walker", coat: "#5c7a5a", trousers: "#2a2a30", hair: "#1f1a18", bag: "#c86b3c", w: 0.7, h: 1.74, speed: 1.4 },
+  ];
+  const list = kinds.slice(0, mobile ? 3 : 4).map((k, i) => {
+    const tex = T.passer(k);
+    const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, color: 0xe6e1d8 });
+    const m = add(new THREE.Mesh(new THREE.PlaneGeometry(k.w, k.h), mat));
+    m.rotation.y = Math.PI; m.visible = false;
+    return { m, k, tex, x: 0, dir: 1, z: R.z1 + 0.9 + (i % 2) * 1.1, wait: 2 + i * 6.5, t: 0 };
+  });
+  return {
+    list,
+    update(dt) {
+      for (const p of list) {
+        if (p.wait > 0) {
+          p.wait -= dt;
+          if (p.wait <= 0) { p.dir = Math.random() < 0.5 ? 1 : -1; p.x = p.dir > 0 ? -8.5 : 6.5; p.t = 0; p.m.visible = true; p.m.scale.x = -p.dir; }
+          continue;
+        }
+        p.t += dt;
+        p.x += p.dir * p.k.speed * dt;
+        const steps = p.k.draw === "bike" ? 2.2 : p.k.speed * 1.6;
+        p.tex.offset.x = Math.floor(p.t * steps * 2) % 2 ? 0.5 : 0;
+        const bob = p.k.draw === "bike" ? 0 : Math.abs(Math.sin(p.t * steps * Math.PI)) * 0.025;
+        p.m.position.set(p.x, p.k.h / 2 + bob, p.z);
+        if (p.x > 7 || p.x < -9) { p.m.visible = false; p.wait = 6 + Math.random() * 16; }
+      }
+    },
+  };
 }

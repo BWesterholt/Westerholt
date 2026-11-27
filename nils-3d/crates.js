@@ -12,6 +12,10 @@ const OUT_W = IN_W + 2 * WALL, OUT_D = IN_D + 2 * WALL;
 const PITCH = 0.41;
 export const TABLE_H = 0.8;
 const DIV_W = 0.33, DIV_H = 0.37;
+// A little air between the records, so the small random turn of each one never makes two of them
+// go through each other.
+const GAP = 0.0011;
+const FLIP = 0.016; // seconds per record when the pile catches up with a jump
 const ROW_X = 1.5, ROW_MID_Z = 0.55;
 
 // Which records go in which crate: whole letters where they fit, big letters split evenly.
@@ -43,7 +47,8 @@ export function planCrates(vinyl) {
       it.t = it.rec ? LP.d * (1 + 0.6 * ((it.rec.n || 1) - 1)) : 0.0016;
       const seed = hash((it.rec ? it.rec.key : it.div) + c.k);
       const r = rng(seed);
-      it.jx = (r() - 0.5) * 0.008; it.jy = (r() - 0.5) * 0.02; it.jt = (r() - 0.5) * 0.02;
+      // only a slight sideways shift and turn; a different tilt per record made neighbours cross
+      it.jx = (r() - 0.5) * 0.008; it.jy = (r() - 0.5) * 0.006; it.jt = 0;
     }
   });
   return crates;
@@ -55,16 +60,20 @@ export function planCrates(vinyl) {
 function solve(crate, c) {
   const items = crate.items, n = items.length, out = new Array(n);
   const thb = -0.14, cb = Math.cos(thb);
-  let s = -IN_D / 2 + 0.03;
-  for (let j = n - 1; j >= c; j--) { const t = items[j].t; s += t / 2 / cb; out[j] = { s, th: thb }; s += t / 2 / cb; }
-  if (c < n) { out[c].th = thb - 0.05; out[c].s += 0.006; }
+  // the last record leans on the top of the back wall, so it must stand far enough from it
+  let s = -IN_D / 2 + BACK_H * Math.tan(-thb) + 0.004;
+  for (let j = n - 1; j >= c; j--) { const t = items[j].t + GAP; s += t / 2 / cb; out[j] = { s, th: thb }; s += t / 2 / cb; }
+  // the record you are looking at stands a few millimetres free of the pile
+  if (c < n) out[c].s += 0.003;
   let sumF = 0;
-  for (let j = 0; j < c; j++) sumF += items[j].t;
-  const avail = IN_D / 2 - s - 0.014;
+  for (let j = 0; j < c; j++) sumF += items[j].t + GAP;
+  const avail = IN_D / 2 - s - 0.016;
   let th = 0.72;
   while (th > 0.1 && FRONT_H * Math.tan(th) + sumF / Math.cos(th) + 0.01 > avail) th -= 0.02;
-  let sf = IN_D / 2 - Math.min(FRONT_H * Math.tan(th), avail - sumF / Math.cos(th));
-  for (let j = 0; j < c; j++) { const t = items[j].t; sf -= t / 2 / Math.cos(th); out[j] = { s: sf, th: th - 0.006 * Math.min(8, c - 1 - j) }; sf -= t / 2 / Math.cos(th); }
+  let sf = IN_D / 2 - Math.max(0, Math.min(FRONT_H * Math.tan(th), avail - sumF / Math.cos(th)));
+  // The ones tipped forward: the front one rests on the front wall, each one behind leans on the
+  // one in front of it, a little more upright, so they fan out without crossing.
+  for (let j = 0; j < c; j++) { const t = items[j].t + GAP; sf -= t / 2 / Math.cos(th); out[j] = { s: sf, th: th - 0.006 * Math.min(8, j) }; sf -= t / 2 / Math.cos(th); }
   return out;
 }
 
@@ -86,6 +95,7 @@ export class Crates {
     this.crates = crates;
     this.coverSize = coverSize;
     this.mobile = mobile;
+    this.waiting = [];
     this.group = new THREE.Group();
     scene.add(this.group);
     this.active = null;
@@ -285,6 +295,7 @@ export class Crates {
       this.hide(it);
     });
     this.sleeves.instanceMatrix.needsUpdate = true;
+    c.shown = c.cursor; c.target = c.pose; c.stepT = 0;
     this.setCursor(at === undefined ? c.cursor : at);
   }
   // The front record was drawn small; dig mode wants it sharp.
@@ -309,7 +320,9 @@ export class Crates {
     if (!c) return;
     j = clamp(Math.round(j), 0, c.items.length);
     c.cursor = j;
-    c.target = solve(c, j);
+    // the pile itself follows one record per frame (see update), so a long jump flips through
+    // the records instead of sweeping them through each other
+    if (c.shown === undefined || !c.target) { c.shown = j; c.target = solve(c, j); }
     // covers for the records around the cursor, nearest first
     for (let d = -3; d <= 10; d++) {
       const it = c.items[j + d];
@@ -351,22 +364,38 @@ export class Crates {
     if (!c || !c.target) return false;
     let moving = false;
     const n = c.items.length;
+    if (c.shown !== c.cursor) {
+      // at most one record per frame: two at once let them pass through each other
+      c.stepT += dt;
+      if (c.stepT >= FLIP) { c.stepT = Math.min(c.stepT - FLIP, FLIP); c.shown += Math.sign(c.cursor - c.shown); c.target = solve(c, c.shown); }
+      moving = true;
+    } else c.stepT = 0;
     for (let j = 0; j < n; j++) {
       const st = c.state[j], tg = c.target[j], it = c.items[j];
       // records near the cursor move first, the rest a moment later, like a wave
-      const omega = 22 - Math.min(10, Math.abs(j - c.cursor) * 0.9);
+      const omega = 20 - Math.min(3, Math.abs(j - c.shown) * 0.3);
       [st.th, st.vt] = spring(st.th, st.vt, tg.th, omega, dt);
       [st.s, st.vs] = spring(st.s, st.vs, tg.s, omega, dt);
       if (Math.abs(st.th - tg.th) > 0.0005 || Math.abs(st.s - tg.s) > 0.00005 || Math.abs(st.vt) > 0.001) moving = true;
       let lift = 0;
-      if (j === c.cursor && this.lift) lift = this.lift;
+      if (j === c.cursor && c.shown === c.cursor && this.lift) lift = this.lift;
       const target = it.rec ? it.hero && it.hero.matrix : it.mesh.matrix;
       if (!target) continue;
       itemMatrix(c.obj, it, st.s + lift * 0.1, st.th, it.rec ? LP.h : DIV_H, target);
       if (lift && j === c.cursor) { _o.makeTranslation(0, lift, 0); target.premultiply(_o); }
       (it.rec ? it.hero : it.mesh).matrixWorldNeedsUpdate = true;
     }
+    if (this.waiting.length && c.shown === c.cursor) {
+      const st = c.state[c.cursor], tg = c.target[c.cursor];
+      if (!st || (Math.abs(st.th - tg.th) < 0.01 && Math.abs(st.s - tg.s) < 0.001)) { const w = this.waiting; this.waiting = []; w.forEach((f) => f()); }
+    }
     return moving;
+  }
+  // Resolves when the pile has caught up with the cursor (or at once when no crate is open).
+  settle() {
+    const c = this.active;
+    if (!c || c.shown === c.cursor) return Promise.resolve();
+    return new Promise((res) => { this.waiting.push(res); setTimeout(res, 2500); });
   }
 
   // The world position and rotation of an item as it stands now.
