@@ -251,6 +251,8 @@ export class Sound {
     this.on = false;
   }
   progress() { return this.audio && this.audio.duration ? this.audio.currentTime / this.audio.duration : 0; }
+  // Music from somewhere this page can't listen to (Spotify's player): the made-up beat keeps the lights going.
+  external(on) { if (on && !this.on) this.t0 = performance.now(); this.on = on; this.real = false; }
   // How loud the music is right now: bass, middle and treble, plus 40 bands for the light strip.
   levels(out) {
     out.on = this.on ? 1 : 0;

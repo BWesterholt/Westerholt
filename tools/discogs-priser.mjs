@@ -19,7 +19,7 @@ import { gzipSync, gunzipSync } from "node:zlib";
 import { webcrypto as crypto } from "node:crypto";
 import samling from "../data/samling.js";
 import gemte from "../data/priser.js";
-import { lookUp, estimate, byGrade, roundKr, VERSION, MODEL_VERSION, WISH_VERSION, EDITION_VERSION } from "../lib/nils-pris.js";
+import { lookUp, coverOnly, estimate, byGrade, roundKr, VERSION, MODEL_VERSION, WISH_VERSION, EDITION_VERSION } from "../lib/nils-pris.js";
 import { wanted } from "../lib/nils-lookup.js";
 
 const password = process.env.NILS_KODE, token = process.env.DISCOGS_TOKEN;
@@ -29,6 +29,9 @@ const site = process.env.NILS_SIDE || "https://nils.westerholt.dk";
 // Only the real run (on main) tells the website; test runs on other branches only save the file.
 const tellSite = process.env.SEND_TIL_SIDEN === "1";
 const MARKET_DAYS = 14, RETRY_DAYS = 60;
+// Covers: a pressing found before covers were saved gets its cover with 1 request. At most this
+// many per run (so the hourly runs stay short); MAX_BILLEDER=alle takes all of them at once.
+const maxPictures = /^alle$/i.test(process.env.MAX_BILLEDER || "") ? Infinity : Number(process.env.MAX_BILLEDER || 150);
 
 const keyBytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("nils-samling:" + password));
 const key = await crypto.subtle.importKey("raw", keyBytes, "AES-GCM", false, ["encrypt", "decrypt"]);
@@ -88,7 +91,8 @@ function revalue(k) {
   return prices[k];
 }
 
-const first = [], wishJobs = [], rest = [];
+const first = [], wishJobs = [], rest = [], pictures = [];
+const needsCover = (p) => !!p && !!p.id && p.c === undefined;
 for (const r of vinyl) {
   const k = keyOf(r), p = revalue(k), ed = edOf(r);
   // Changed on the page, or typed in before the field was read the way it is now.
@@ -97,7 +101,7 @@ for (const r of vinyl) {
   const changed = !!p && (!sameEd(p.ed, ed) || (!!(ed && ed.c) && p.ev !== EDITION_VERSION) || (!!q && p.q !== q));
   const search = !p || p.v !== VERSION || changed || (!p.id && today - (p.t || 0) >= RETRY_DAYS);
   const market = !!p && !!p.id && old(p);
-  if (!search && !market) continue;
+  if (!search && !market) { if (needsCover(p)) pictures.push({ key: k, cover: true }); continue; }
   const job = { key: k, want: wanted(r.a, r.b, r.y, /^(LP|MX)/.test(r.m || "") ? r.m : "LP"), ed, prev: search ? null : p, ...(q ? { q } : {}) };
   (changed || hinted.has(k) ? first : rest).push(job);
 }
@@ -110,8 +114,9 @@ for (const w of wishes || []) {
   wishKeys.add(k);
   const same = p && p.q === q && p.v === VERSION;
   if (!same || old(p) || p.all !== WISH_VERSION) wishJobs.push({ key: k, q, all: true, want: wanted(w.a, w.b, w.y || "", "LP"), ed: null, prev: same && p.id ? p : null });
+  else if (needsCover(p)) pictures.push({ key: k, cover: true });
 }
-let todo = [...first, ...wishJobs, ...rest];
+let todo = [...first, ...wishJobs, ...rest, ...pictures.slice(0, maxPictures)];
 // A test run (STIKPROVE=40): only that many records spread over the collection, two wishes, and
 // a few of them searched for from scratch, so every part is tried without a full run.
 const sample = Number(process.env.STIKPROVE || 0);
@@ -119,23 +124,33 @@ if (sample > 0) {
   const step = Math.max(1, Math.floor(rest.length / sample));
   const picked = rest.filter((_, i) => i % step === Math.floor(step / 2)).slice(0, sample);
   picked.slice(0, Math.min(5, Math.floor(sample / 8))).forEach((j) => { j.prev = null; });
-  todo = [...first, ...wishJobs.slice(0, 2), ...picked];
+  todo = [...first, ...wishJobs.slice(0, 2), ...picked, ...pictures.slice(0, Math.min(10, maxPictures))];
 }
-console.log(`${vinyl.length} vinylplader og ${wishKeys.size} ønsker, ${todo.length} skal slås op (${first.length} ændret på siden), ${redone} regnet om.`);
+console.log(`${vinyl.length} vinylplader og ${wishKeys.size} ønsker, ${todo.length} skal slås op (${first.length} ændret på siden, ${Math.min(pictures.length, maxPictures)} kun cover af ${pictures.length} uden), ${redone} regnet om.`);
 
 const started = Date.now();
-let done = 0, found = 0, failed = 0, lastReport = 0, stopped = false;
+let done = 0, found = 0, covers = 0, failed = 0, lastReport = 0, stopped = false;
 // A run started from the page always tells it when it ends, even with nothing to do.
 const tell = todo.length > 0 || !!process.env.UDGAVE;
 if (tell) await report();
 for (const r of todo) {
   if (Date.now() - started > maxMinutes * 60000) { console.log("Tiden er gået; resten tages næste gang."); stopped = true; break; }
   try {
+    if (r.cover) {
+      // only the cover: the value stays as it is
+      const c = await coverOnly(token, prices[r.key].id);
+      if (c !== undefined) { prices[r.key] = { ...prices[r.key], c, ts: Date.now() }; live[r.key] = prices[r.key]; if (c) covers++; }
+      done++;
+      if (Date.now() - lastReport > 30000) await report();
+      if (done % 100 === 0) { console.log(`${done}/${todo.length} (${found} med pris, ${covers} covers, ${failed} fejl)`); await save(); }
+      continue;
+    }
     const res = await lookUp(token, r.want, r.ed || {}, !!r.all, r.prev, today);
     const entry = { ...res, t: today, ts: Date.now(), ...(r.ed && (r.ed.c || r.ed.y) ? { ed: { ...(r.ed.c ? { c: r.ed.c } : {}), ...(r.ed.y ? { y: r.ed.y } : {}) } } : {}), ...(r.q ? { q: r.q } : {}), ...(r.all ? { all: WISH_VERSION } : {}) };
     prices[r.key] = entry;
     live[r.key] = entry;
     if (res.p || res.ml) found++;
+    if (res.c) covers++;
   } catch (e) {
     if (e.denied) { console.error(e.message); break; }
     failed++;
@@ -147,7 +162,7 @@ for (const r of todo) {
 }
 await save();
 if (tell) await report(true);
-console.log(`Færdig: ${done} slået op, ${found} med pris, ${failed} fejl.`);
+console.log(`Færdig: ${done} slået op, ${found} med pris, ${covers} covers, ${failed} fejl.`);
 
 function keyOf(r) { return r.k || [r.a, r.b, r.y, r.m].join("|"); }
 function liveOf(d) { try { return (d && typeof d.live === "string" && JSON.parse(d.live).priser) || {}; } catch (e) { return {}; } }

@@ -17,6 +17,10 @@ on:
         description: "Kun til test: slå kun så mange plader op"
         required: false
         default: ""
+      billeder:
+        description: "Hvor mange covers der højst hentes (tomt = 150, alle = alle)"
+        required: false
+        default: ""
   schedule:
     - cron: "17 * * * *"
 
@@ -48,6 +52,7 @@ jobs:
           SEND_TIL_SIDEN: ${{ github.ref == 'refs/heads/main' && '1' || '0' }}
           UDGAVE: ${{ inputs.udgave }}
           STIKPROVE: ${{ inputs.stikprove }}
+          MAX_BILLEDER: ${{ inputs.billeder }}
         run: node tools/discogs-priser.mjs
       - name: Gem priserne
         run: |

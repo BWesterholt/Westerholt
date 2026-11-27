@@ -4,7 +4,8 @@
 // journey through the decades. Three.js, no build step: these files are served as they are.
 import * as THREE from "three";
 import { EffectComposer, RenderPass, UnrealBloomPass, OutputPass, ShaderPass, RoomEnvironment } from "three";
-import { loadCollection, findInfo, findPreviews, collectionLink } from "./data.js";
+import { loadCollection, findInfo, findPreviews, findCover, findSpotify, collectionLink } from "./data.js";
+import * as Spotify from "./spotify.js";
 import { buildRoom, addPosters, hangingSign, ROOM, COUNTER } from "./room.js";
 import { planCrates, Crates } from "./crates.js";
 import { CdWall } from "./cdwall.js";
@@ -92,7 +93,7 @@ function resize() {
 
 // ---------------------------------------------------------------- user interface helpers
 const ui = {
-  show(el, on) { (typeof el === "string" ? $(el) : el).classList.toggle("hide", !on); },
+  show(el, on) { (typeof el === "string" ? $(el) : el).classList.toggle("hide", !on); if (el === "card") document.body.classList.toggle("withcard", !!on); },
   hintTimer: 0,
   hint(text, ms = 6000) {
     clearTimeout(ui.hintTimer);
@@ -132,6 +133,8 @@ const ICON = {
   up: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>',
   down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>',
   back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
+  music: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>',
+  clip: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
   open: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>',
   next: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 5v14l9-7zM16 5h3v14h-3z"/></svg>',
 };
@@ -244,7 +247,8 @@ async function backgroundTints() {
   await new Promise((r) => setTimeout(r, 6000));
   let stored = {};
   try { stored = JSON.parse(localStorage.getItem("nils3d:farver") || "{}") || {}; } catch (e) {}
-  const todo = data.records.filter((r) => r.cover && !stored[r.key]);
+  // (Discogs' photos are big: their colour is taken when one is shown instead.)
+  const todo = data.records.filter((r) => r.cover && r.cover !== r.discogsCover && !stored[r.key]);
   let i = 0;
   const worker = async () => {
     while (i < todo.length) {
@@ -255,6 +259,23 @@ async function backgroundTints() {
     }
   };
   worker(); worker(); worker();
+  huntCovers();
+}
+
+// Covers nobody has looked for yet are found a few at a time while the shop is open (the ones you
+// are looking at go first), so the tunnel and the crates fill up, and the collection page gets
+// them too.
+function huntCovers() {
+  const todo = data.records.filter((r) => r.cover === null || r.cover === undefined);
+  let i = 0;
+  const next = () => {
+    if (i >= todo.length) return;
+    if (document.hidden) { setTimeout(next, 5000); return; }
+    const batch = todo.slice(i, i + 3);
+    i += 3;
+    Promise.all(batch.map((r) => findCover(r, -5))).then(() => setTimeout(next, 250));
+  };
+  setTimeout(next, 4000);
 }
 
 // ---------------------------------------------------------------- lights
@@ -911,7 +932,9 @@ async function playInspected() {
   const rec = I.rec, kind = I.kind;
   const pv = playView();
   if (I.prevMode === "walk" || !back) back = back || walkPose();
-  const previews = findPreviews(rec).catch(() => []);
+  // Spotify's player if it's turned on (the default), else the short clips.
+  const spotify = useSpotify ? findSpotify(rec).catch(() => null) : null;
+  const previews = spotify ? null : findPreviews(rec).catch(() => []);
   const cam = flyTo(pv.pos, pv.look, { dur: 1.5, arc: 0.25 });
   // the sleeve goes on the "Spiller nu" stand, the record on the player
   const disc = I.disc;
@@ -932,7 +955,7 @@ async function playInspected() {
   await tweens.add({ dur: 0.45, ease: ease.inOut, update: (k) => { disc.position.lerpVectors(hover, dTo.pos, k); } });
   spot.attach(disc);
   await Promise.all([cam, sleeveMove]);
-  playing = { rec, kind, sleeve: I.obj, disc, src: I.src, I, tracks: [], idx: 0 };
+  playing = { rec, kind, sleeve: I.obj, disc, src: I.src, I, tracks: [], idx: 0, previews };
   mode = "play";
   if (kind === "cd") { gear.cdplayer.openTarget = 0; await tweens.wait(0.35); gear.cdplayer.target = 30; }
   else {
@@ -943,13 +966,95 @@ async function playInspected() {
     await tweens.wait(0.35);
     sound.crackle(0.35, 0.05);
   }
+  const P = playing;
+  if (spotify) {
+    showPlayCard();
+    showNow("Finder pladen på Spotify …", rec.artist + " – " + rec.b);
+    const s = await spotify;
+    if (playing !== P) return;
+    if (s && s.id && await startSpotify(P, s.id)) return;
+    if (playing !== P) return;
+    if (s && !s.id && !s.retry) P.noSpotify = true;
+    ui.toast(P.noSpotify ? "Pladen er ikke på Spotify, så der spilles klip i stedet." : !s || !s.id ? "Spotify svarer ikke lige nu, så der spilles klip i stedet." : "Spotify-afspilleren kunne ikke starte, så der spilles klip i stedet.", 4500);
+  }
+  playClips(P);
+}
+async function playClips(P) {
   showPlayCard();
-  showNow("Finder et lydklip …", rec.artist + " – " + rec.b);
-  const tracks = await previews;
-  if (!playing || playing.rec !== rec) return;
-  playing.tracks = tracks;
-  if (!tracks.length) { sound.crackle(kind === "vinyl" ? 0.12 : 0, 0.5); showNow("Fandt ikke et lydklip", rec.artist + " – " + rec.b); ui.toast("Der var ikke et lydklip til den her plade. Den drejer bare rundt."); return; }
+  showNow("Finder et lydklip …", P.rec.artist + " – " + P.rec.b);
+  const tracks = await (P.previews || (P.previews = findPreviews(P.rec).catch(() => [])));
+  if (playing !== P || P.spotify) return;
+  P.tracks = tracks;
+  spin(P, true);
+  if (mode === "play") showPlayCard();
+  if (!tracks.length) { sound.crackle(P.kind === "vinyl" ? 0.12 : 0, 0.5); showNow("Fandt ikke et lydklip", P.rec.artist + " – " + P.rec.b); ui.toast("Der var ikke et lydklip til den her plade. Den drejer bare rundt."); return; }
   playTrack(0);
+}
+// The turntable or CD player going, or standing still with the arm lifted (Spotify paused).
+function spin(P, on) {
+  if (P.kind === "cd") { gear.cdplayer.target = on ? 30 : 0; return; }
+  const tt = gear.turntable;
+  tt.target.speed = on ? (Math.PI * 2 * 33.333) / 60 : 0;
+  tt.target.lift = on ? 0 : 0.06;
+  if (on && tt.target.yaw === tt.yawRest) tt.target.yaw = tt.yawOuter;
+}
+
+// ---------------------------------------------------------------- Spotify
+let useSpotify = true;
+try { useSpotify = localStorage.getItem("nils3d:spotify") !== "0"; } catch (e) {}
+function setUseSpotify(on) { useSpotify = on; try { localStorage.setItem("nils3d:spotify", on ? "1" : "0"); } catch (e) {} }
+const ALBUM_MS = 45 * 60e3; // the arm goes across the record in about one album's time
+async function startSpotify(P, id) {
+  sound.stopClip();
+  P.spotify = { id, played: 0, last: 0 };
+  ui.show("now", false);
+  $("spoto").href = "https://open.spotify.com/album/" + id;
+  $("spotn").hidden = true;
+  ui.show("spot", true);
+  showPlayCard();
+  try {
+    await Spotify.playAlbum($("spotf"), id, innerWidth <= 600 ? 80 : 152);
+  } catch (e) {
+    if (playing === P) { P.spotify = null; ui.show("spot", false); showPlayCard(); }
+    return false;
+  }
+  // Some browsers only start the sound after a tap in Spotify's own player.
+  setTimeout(() => { if (playing === P && P.spotify && !Spotify.state.started) ui.toast("Tryk på ▶ i Spotify-afspilleren for at starte musikken.", 5000); }, 5000);
+  return true;
+}
+Spotify.onUpdate((st) => {
+  const P = playing;
+  if (!P || !P.spotify) return;
+  const on = !st.paused;
+  sound.external(on);
+  sound.crackle(on && P.kind === "vinyl" ? 0.035 : 0, 0.4);
+  spin(P, on);
+  const d = st.position - P.spotify.last;
+  if (on && d > 0 && d < 5000) P.spotify.played += d;
+  P.spotify.last = st.position;
+  if (P.kind === "vinyl" && on) { const tt = gear.turntable; tt.target.yaw = lerp(tt.yawOuter, tt.yawInner, clamp(P.spotify.played / ALBUM_MS, 0, 0.95)); }
+  if (P.kind === "cd") { const sec = Math.floor(st.position / 1000); setDisplay(gear.cdplayer.display, [(on ? "▶ " : "II ") + Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0")]); }
+  // Not logged in to Spotify: it only plays 30 seconds of each song.
+  $("spotn").hidden = !(st.duration > 0 && st.duration <= 31000);
+});
+async function switchToSpotify() {
+  const P = playing;
+  if (!P) return;
+  setUseSpotify(true);
+  const s = await findSpotify(P.rec).catch(() => null);
+  if (playing !== P) return;
+  if (!s || !s.id) { if (s && !s.retry) { P.noSpotify = true; showPlayCard(); } ui.toast(s && !s.retry ? "Pladen er ikke på Spotify." : "Spotify svarer ikke lige nu. Prøv igen om lidt."); return; }
+  if (!(await startSpotify(P, s.id)) && playing === P) ui.toast("Spotify-afspilleren kunne ikke starte.");
+}
+function switchToClips() {
+  const P = playing;
+  if (!P) return;
+  setUseSpotify(false);
+  Spotify.pause();
+  P.spotify = null;
+  sound.external(false);
+  ui.show("spot", false);
+  playClips(P);
 }
 function playTrack(i) {
   if (!playing) return;
@@ -963,6 +1068,8 @@ function playTrack(i) {
   if (P.kind === "cd") setDisplay(gear.cdplayer.display, [String(i + 1).padStart(2, "0") + "  0:00"]);
 }
 function stopPlaying(quiet) {
+  if (playing && playing.spotify) Spotify.pause();
+  ui.show("spot", false);
   sound.stopClip();
   sound.crackle(0, 0.3);
   const tt = gear.turntable;
@@ -986,6 +1093,7 @@ function showNow(title, sub) {
   ui.show("now", true);
 }
 function updateNow() {
+  if (playing.spotify) return;
   const p = sound.progress();
   $("nowp").style.width = (p * 100).toFixed(1) + "%";
   if (playing.kind === "vinyl" && playing.tracks.length) {
@@ -998,8 +1106,15 @@ function updateNow() {
 }
 function showPlayCard() {
   if (!playing) { ui.card(null); ui.hint("Pladen er stoppet. Find en ny i kasserne.", 4000); return; }
-  ui.card(playing.rec, { actions: [{ label: "Tilbage til butikken", icon: "back", main: true, run: goBack }, { label: "Næste nummer", icon: "next", run: () => playTrack(playing.idx + 1) }] });
+  const P = playing, actions = [{ label: "Tilbage til butikken", icon: "back", main: true, run: goBack }];
+  if (P.spotify) actions.push({ label: "Lydklip i stedet", icon: "clip", run: switchToClips });
+  else {
+    if (P.tracks.length > 1) actions.push({ label: "Næste nummer", icon: "next", run: () => playTrack(P.idx + 1) });
+    if (!P.noSpotify) actions.push({ label: "Hele numre på Spotify", icon: "music", run: switchToSpotify });
+  }
+  ui.card(P.rec, { actions });
 }
+$("spotx").addEventListener("click", () => stopPlaying());
 $("nownext").addEventListener("click", () => { if (playing) playTrack(playing.idx + 1); });
 $("nowstop").addEventListener("click", () => stopPlaying());
 function goToCounter() {
