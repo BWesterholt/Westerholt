@@ -62,6 +62,14 @@ for (const hint of (editions && hints) || []) {
   if (hint.y) e.y = hint.y;
   editions[hint.k] = e;
 }
+// Benjamin's own records (the Odense collection), added on the page and kept there (lib/nils-egne.js).
+// Each is kept under its own key "odense:<id>"; one just added comes along with the start of the run.
+const ownList = await fromSite("/egne").then((d) => (d && Array.isArray(d.plader) ? d.plader : null));
+const ownRecords = (ownList || []).slice();
+for (const h of hints || []) if (h.o && h.o.id && !ownRecords.some((o) => o.id === h.o.id)) ownRecords.push(h.o);
+for (const o of ownRecords) {
+  if (o && o.id && o.t === "Vinyl" && (o.a || o.b)) vinyl.push({ t: "Vinyl", a: String(o.a || ""), b: String(o.b || ""), y: String(o.y || ""), m: o.m === "MX" ? "MX" : "LP", k: "odense:" + o.id });
+}
 // If the website didn't answer, keep the details used last time.
 const edOf = (r) => editions ? editions[keyOf(r)] || null : (prices[keyOf(r)] && prices[keyOf(r)].ed) || null;
 // Only the catalogue number and year change which pressing is found; the grade is picked on the page.
@@ -84,11 +92,13 @@ const first = [], wishJobs = [], rest = [];
 for (const r of vinyl) {
   const k = keyOf(r), p = revalue(k), ed = edOf(r);
   // Changed on the page, or typed in before the field was read the way it is now.
-  const changed = !!p && (!sameEd(p.ed, ed) || (!!(ed && ed.c) && p.ev !== EDITION_VERSION));
+  // An own record whose title or year was corrected on the page is searched for again.
+  const q = r.k ? [r.a, r.b, r.y, r.m].join("|") : "";
+  const changed = !!p && (!sameEd(p.ed, ed) || (!!(ed && ed.c) && p.ev !== EDITION_VERSION) || (!!q && p.q !== q));
   const search = !p || p.v !== VERSION || changed || (!p.id && today - (p.t || 0) >= RETRY_DAYS);
   const market = !!p && !!p.id && old(p);
   if (!search && !market) continue;
-  const job = { key: k, want: wanted(r.a, r.b, r.y, /^(LP|MX)/.test(r.m || "") ? r.m : "LP"), ed, prev: search ? null : p };
+  const job = { key: k, want: wanted(r.a, r.b, r.y, /^(LP|MX)/.test(r.m || "") ? r.m : "LP"), ed, prev: search ? null : p, ...(q ? { q } : {}) };
   (changed || hinted.has(k) ? first : rest).push(job);
 }
 // The wishlist too (not CDs, not bought), so you know what a fair price is when shopping.
@@ -139,7 +149,7 @@ await save();
 if (tell) await report(true);
 console.log(`Færdig: ${done} slået op, ${found} med pris, ${failed} fejl.`);
 
-function keyOf(r) { return [r.a, r.b, r.y, r.m].join("|"); }
+function keyOf(r) { return r.k || [r.a, r.b, r.y, r.m].join("|"); }
 function liveOf(d) { try { return (d && typeof d.live === "string" && JSON.parse(d.live).priser) || {}; } catch (e) { return {}; } }
 
 // Reads something from the website, logged in with the password. Null when it doesn't answer.
@@ -175,14 +185,15 @@ async function report(end = false) {
 
 // The record changed on the page, sent along when the page started the run: "iv.data", encrypted
 // with the collection's key. Gives [{ k: record key, c: the "Kat.nr." field, y: year }] or null
-// (one record from the page; a test run may send several).
+// (one record from the page; a test run may send several). For an own record just added, o is the
+// record itself (lib/nils-egne.js).
 async function readHint(text) {
   if (!text || !/^[A-Za-z0-9+/=]+\.[A-Za-z0-9+/=]+$/.test(text)) return null;
   try {
     const [iv, data] = text.split(".");
     const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64(iv) }, key, b64(data));
     const h = JSON.parse(new TextDecoder().decode(plain));
-    const list = (Array.isArray(h) ? h : [h]).filter((x) => x && typeof x.k === "string").map((x) => ({ k: x.k, c: String(x.c || ""), y: String(x.y || "") }));
+    const list = (Array.isArray(h) ? h : [h]).filter((x) => x && typeof x.k === "string").map((x) => ({ k: x.k, c: String(x.c || ""), y: String(x.y || ""), ...(x.o && typeof x.o === "object" && /^odense:/.test(x.k) ? { o: x.o } : {}) }));
     return list.length ? list : null;
   } catch (e) {
     return null;
@@ -193,6 +204,8 @@ async function save() {
   // Only values for records still in the collection are kept.
   const keep = {};
   for (const r of vinyl) { const k = keyOf(r); if (prices[k]) keep[k] = prices[k]; }
+  // Own records: if the website didn't answer, keep the ones saved before.
+  if (!ownList) for (const k in prices) if (k.startsWith("odense:")) keep[k] = prices[k];
   // Wishes: the current ones, or all saved ones if the website didn't answer.
   for (const k in prices) if (k.startsWith("ønske:") && (wishes ? wishKeys.has(k) : true)) keep[k] = prices[k];
   const iv = crypto.getRandomValues(new Uint8Array(12));

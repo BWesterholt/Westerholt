@@ -11,6 +11,7 @@ import { handleWishlist, searchAlbums } from "../lib/nils-onsker.js";
 import { handleCovers } from "../lib/nils-omslag.js";
 import priser from "../data/priser.js";
 import { handleEditions } from "../lib/nils-udgaver.js";
+import { handleOwn } from "../lib/nils-egne.js";
 import { editionScript } from "../lib/nils-udgavefelt.js";
 import { handlePrices } from "../lib/nils-priser.js";
 import { handlePeople } from "../lib/nils-personer.js";
@@ -112,6 +113,11 @@ export async function onRequest(context) {
   if (path === "/udgaver") {
     return handleEditions(context, request, password);
   }
+  // Benjamin's own records (the Odense collection) and the ones borrowed from Rødby, added on the
+  // page and kept in KV, so a new Excel sheet never touches them (lib/nils-egne.js).
+  if (path === "/egne") {
+    return handleOwn(context, request, password);
+  }
   if (path === "/info") {
     return lookup(await findInfo(context, url.searchParams.get("a") || "", url.searchParams.get("b") || "", url.searchParams.get("y") || "", url.searchParams.get("m") || ""));
   }
@@ -173,7 +179,7 @@ async function demo(context, url) {
     // No names in the demo: hide who wants what, and let anyone add or mark a record as bought.
     .replace('if (!d.who.length) return err("Vælg hvem der ønsker pladen.");', "")
     .replace('if (name === "kobt" && !button.getAttribute("data-by")) {', "if (false) {")
-    .replace("</head>", "<style>#wseg,#fwho,.flabel:has(+ #fwho){display:none !important}</style></head>")
+    .replace("</head>", "<style>#wseg,#fwho,.flabel:has(+ #fwho),#cadd,#pseg{display:none !important}</style></head>")
     .replace("<head>", "<head>" + demoScript)
     .replaceAll("__BASE__", DEMO)
     .replace("/*__SEARCH__*/", () => searchCode)
