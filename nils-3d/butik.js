@@ -972,10 +972,11 @@ async function playInspected() {
     showNow("Finder pladen på Spotify …", rec.artist + " – " + rec.b);
     const s = await spotify;
     if (playing !== P) return;
-    if (s && s.id && await startSpotify(P, s.id)) return;
+    if (s && (s.id || s.artist) && await startSpotify(P, s)) return;
     if (playing !== P) return;
-    if (s && !s.id && !s.retry) P.noSpotify = true;
-    ui.toast(P.noSpotify ? "Pladen er ikke på Spotify, så der spilles klip i stedet." : !s || !s.id ? "Spotify svarer ikke lige nu, så der spilles klip i stedet." : "Spotify-afspilleren kunne ikke starte, så der spilles klip i stedet.", 4500);
+    if (s && s.why) console.info("Spotify:", s.why);
+    if (s && !s.id && !s.artist && !s.retry) P.noSpotify = true;
+    ui.toast(P.noSpotify ? "Fandt ikke pladen på Spotify, så der spilles klip i stedet." : !s || (!s.id && !s.artist) ? "Spotify svarer ikke lige nu, så der spilles klip i stedet." : "Spotify-afspilleren kunne ikke starte, så der spilles klip i stedet.", 4500);
   }
   playClips(P);
 }
@@ -1004,16 +1005,20 @@ let useSpotify = true;
 try { useSpotify = localStorage.getItem("nils3d:spotify") !== "0"; } catch (e) {}
 function setUseSpotify(on) { useSpotify = on; try { localStorage.setItem("nils3d:spotify", on ? "1" : "0"); } catch (e) {} }
 const ALBUM_MS = 45 * 60e3; // the arm goes across the record in about one album's time
-async function startSpotify(P, id) {
+async function startSpotify(P, s) {
   sound.stopClip();
-  P.spotify = { id, played: 0, last: 0 };
+  const kind = s.id ? "album" : "artist", id = s.id || s.artist;
+  P.spotify = { id, kind, played: 0, last: 0 };
   ui.show("now", false);
-  $("spoto").href = "https://open.spotify.com/album/" + id;
+  $("spoto").href = "https://open.spotify.com/" + kind + "/" + id;
+  $("spott").textContent = kind === "album" ? "Spiller fra Spotify" : "Kunstneren på Spotify";
   $("spotn").hidden = true;
   ui.show("spot", true);
   showPlayCard();
+  // Only the artist is on Spotify: their most played songs.
+  if (kind === "artist") ui.toast("Pladen er ikke på Spotify, så du hører " + P.rec.artist + (/[sxz]$/i.test(P.rec.artist) ? "'" : "s") + " mest spillede numre.", 5000);
   try {
-    await Spotify.playAlbum($("spotf"), id, innerWidth <= 600 ? 80 : 152);
+    await Spotify.playUri($("spotf"), "spotify:" + kind + ":" + id, innerWidth <= 600 ? 80 : 152);
   } catch (e) {
     if (playing === P) { P.spotify = null; ui.show("spot", false); showPlayCard(); }
     return false;
@@ -1043,8 +1048,8 @@ async function switchToSpotify() {
   setUseSpotify(true);
   const s = await findSpotify(P.rec).catch(() => null);
   if (playing !== P) return;
-  if (!s || !s.id) { if (s && !s.retry) { P.noSpotify = true; showPlayCard(); } ui.toast(s && !s.retry ? "Pladen er ikke på Spotify." : "Spotify svarer ikke lige nu. Prøv igen om lidt."); return; }
-  if (!(await startSpotify(P, s.id)) && playing === P) ui.toast("Spotify-afspilleren kunne ikke starte.");
+  if (!s || (!s.id && !s.artist)) { if (s && !s.retry) { P.noSpotify = true; showPlayCard(); } ui.toast(s && !s.retry ? "Fandt ikke pladen på Spotify." : "Spotify svarer ikke lige nu. Prøv igen om lidt."); return; }
+  if (!(await startSpotify(P, s)) && playing === P) ui.toast("Spotify-afspilleren kunne ikke starte.");
 }
 function switchToClips() {
   const P = playing;

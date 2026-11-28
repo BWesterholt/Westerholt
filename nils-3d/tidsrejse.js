@@ -11,6 +11,20 @@ export const YEAR = 1.7; // metres of tunnel per year
 const R = 2.05; // radius of the tunnel
 const LOOK = 2.6; // how far ahead the year you are looking at begins (jumpTo stops 2.2 before a year)
 const SIZE = 0.36; // size of a record in the tunnel
+const CD_SIZE = SIZE * 0.48; // a CD is much smaller than an LP (12.5 cm against 31 cm), but still easy to see
+const SPINE = 0.085; // the dark hinge on the left of a CD's jewel case, as part of its width
+
+// The look of a CD's jewel case on a flat square: the cover pushed right of a dark plastic hinge,
+// a thin light edge of clear plastic and a little sheen. (vQ: the square's uv, vCd: 1 for a CD.)
+const JEWEL = `
+  if (vCd > 0.5) {
+    float hinge = 1.0 - step(${SPINE.toFixed(3)}, vQ.x);
+    float ridges = 0.5 + 0.5 * sin(vQ.y * 160.0);
+    diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.05, 0.05, 0.06) + 0.05 * ridges * vec3(1.0), hinge);
+    float rim = min(min(vQ.x, 1.0 - vQ.x), min(vQ.y, 1.0 - vQ.y));
+    diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.78, 0.8, 0.84), (1.0 - smoothstep(0.0, 0.022, rim)) * 0.7);
+    diffuseColor.rgb += vec3(0.07) * smoothstep(0.55, 0.95, vQ.y - vQ.x * 0.6 + 0.35) * (1.0 - hinge);
+  }`;
 const START = 4.5; // where you start, in front of the first year
 
 export function yearOf(r) {
@@ -90,19 +104,20 @@ export class TimeTunnel {
         const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.sin(a) * 0.42, -Math.cos(a) * 0.42, (rand() - 0.5) * (wiggle > 0.05 ? 0.14 : 0.04), "XYZ"));
         it.quat = q;
         it.index = k;
-        it.size = it.rec.t === "Vinyl" ? SIZE : SIZE * 0.78;
+        it.size = it.rec.t === "Vinyl" ? SIZE : CD_SIZE;
       }
     }
 
     // All the records, as their cover colour.
     const geo = new THREE.PlaneGeometry(1, 1);
+    geo.setAttribute("aCd", new THREE.InstancedBufferAttribute(new Float32Array(list.map((it) => (it.rec.t === "Vinyl" ? 0 : 1))), 1));
     this.mat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, fog: true });
     this.mat.onBeforeCompile = (sh) => {
-      sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nvarying vec2 vQ;").replace("#include <begin_vertex>", "#include <begin_vertex>\nvQ = uv;");
-      sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying vec2 vQ;").replace("#include <color_fragment>", `#include <color_fragment>
+      sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nvarying vec2 vQ;\nattribute float aCd;\nvarying float vCd;").replace("#include <begin_vertex>", "#include <begin_vertex>\nvQ = uv; vCd = aCd;");
+      sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying vec2 vQ;\nvarying float vCd;").replace("#include <color_fragment>", `#include <color_fragment>
         float e = min(min(vQ.x, 1.0 - vQ.x), min(vQ.y, 1.0 - vQ.y));
         diffuseColor.rgb *= (0.72 + 0.28 * smoothstep(0.0, 0.09, e)) * (0.88 + 0.2 * vQ.y);
-        diffuseColor.rgb += vec3(0.05) * (1.0 - smoothstep(0.0, 0.015, e));`);
+        diffuseColor.rgb += vec3(0.05) * (1.0 - smoothstep(0.0, 0.015, e));` + JEWEL);
     };
     this.mesh = new THREE.InstancedMesh(geo, this.mat, Math.max(1, list.length));
     this.mesh.frustumCulled = false;
@@ -176,6 +191,20 @@ export class TimeTunnel {
     const hg = new THREE.PlaneGeometry(1, 1);
     for (let i = 0; i < HEROES; i++) {
       const mat = new THREE.MeshBasicMaterial({ color: 0xffffff, fog: true, side: THREE.FrontSide });
+      // a CD's cover sits right of the jewel case's hinge
+      mat.userData.cd = { value: 0 };
+      mat.onBeforeCompile = (sh) => {
+        sh.uniforms.uCd = mat.userData.cd;
+        sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nvarying vec2 vQ;").replace("#include <begin_vertex>", "#include <begin_vertex>\nvQ = uv;");
+        sh.fragmentShader = sh.fragmentShader
+          .replace("#include <common>", "#include <common>\nvarying vec2 vQ;\nuniform float uCd;\n#define vCd uCd")
+          .replace("#include <map_fragment>", `#ifdef USE_MAP
+            vec2 cu = vMapUv;
+            if (uCd > 0.5) cu.x = clamp((vMapUv.x - ${SPINE.toFixed(3)}) / ${(1 - SPINE).toFixed(3)}, 0.0, 1.0);
+            diffuseColor *= texture2D(map, cu);
+          #endif`)
+          .replace("#include <color_fragment>", "#include <color_fragment>" + JEWEL);
+      };
       const mesh = new THREE.Mesh(hg, mat);
       mesh.visible = false;
       mesh.matrixAutoUpdate = false;
@@ -211,7 +240,9 @@ export class TimeTunnel {
     const n = new THREE.Vector3(0, 0, 1).applyQuaternion(it.quat);
     // a little below the record, so it sits above the card at the bottom of the screen
     const down = new THREE.Vector3(0, this.mobile ? -0.12 : -0.08, 0);
-    const pos = it.pos.clone().addScaledVector(n, this.mobile ? 1.05 : 0.85).add(down);
+    // a CD is small, so the camera comes closer
+    const near = it.size < SIZE ? 0.55 : 1;
+    const pos = it.pos.clone().addScaledVector(n, (this.mobile ? 1.05 : 0.85) * near).add(down.multiplyScalar(near));
     return { pos, look: it.pos.clone().add(down) };
   }
 
@@ -247,6 +278,7 @@ export class TimeTunnel {
   }
   assign(h, it) {
     h.item = it; this.heroOf.set(it, h);
+    h.mat.userData.cd.value = it.rec.t === "Vinyl" ? 0 : 1;
     const t = it.rec.tint || knownTint(it.rec) || guessTint(it.rec);
     h.mat.map = null; h.mat.color.setRGB(t[0] / 255, t[1] / 255, t[2] / 255, THREE.SRGBColorSpace).multiplyScalar(0.85); h.mat.needsUpdate = true;
     h.mesh.matrix.compose(it.pos.clone().add(new THREE.Vector3(0, 0, 0.004).applyQuaternion(it.quat)), it.quat, new THREE.Vector3(it.size, it.size, 1));

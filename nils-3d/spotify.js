@@ -20,9 +20,9 @@ function loadApi() {
   return loading;
 }
 
-// Plays an album in the player inside `box` (made the first time, then reused).
-export async function playAlbum(box, id, height) {
-  const uri = "spotify:album:" + id;
+// Plays an album (or an artist's most played songs) in the player inside `box` (made the first
+// time, then reused). uri: "spotify:album:…" or "spotify:artist:…".
+export async function playUri(box, uri, height) {
   state.paused = true; state.position = 0; state.duration = 0; state.started = false;
   if (controller) { controller.loadUri(uri); controller.play(); return; }
   if (!making) {
